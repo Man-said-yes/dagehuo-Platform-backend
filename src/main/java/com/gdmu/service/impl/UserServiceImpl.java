@@ -64,4 +64,30 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("更新用户信息失败: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateNickname(Long userId, String nickname) {
+        log.info("更新用户昵称，userId: {}, nickname: {}", userId, nickname);
+        
+        try {
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+            
+            user.setNickname(nickname);
+            
+            int rows = userMapper.update(user);
+            if (rows <= 0) {
+                throw new RuntimeException("更新昵称失败");
+            }
+            
+            log.info("用户昵称更新成功，userId: {}", userId);
+            
+        } catch (Exception e) {
+            log.error("更新用户昵称失败: {}", e.getMessage());
+            throw new RuntimeException("更新昵称失败: " + e.getMessage());
+        }
+    }
 }

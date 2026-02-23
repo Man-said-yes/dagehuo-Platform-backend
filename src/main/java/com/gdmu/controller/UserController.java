@@ -10,6 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/user")
 @Validated
@@ -43,6 +46,23 @@ public class UserController {
             userService.updateUser(userId, request.getNickname(), request.getAvatar(), 
                                     request.getGender(), request.getPhone());
             return Result.success("更新成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "修改昵称", description = "单独修改用户昵称")
+    @PutMapping("/nickname/{userId}")
+    public Result updateNickname(
+            @PathVariable Long userId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String nickname = request.get("nickname");
+            if (nickname == null || nickname.trim().isEmpty()) {
+                return Result.error("昵称不能为空");
+            }
+            userService.updateNickname(userId, nickname);
+            return Result.success("昵称更新成功");
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

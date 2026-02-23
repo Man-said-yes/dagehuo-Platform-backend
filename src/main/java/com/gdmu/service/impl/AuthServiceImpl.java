@@ -7,6 +7,7 @@ import com.gdmu.pojo.WechatCode2SessionResponse;
 import com.gdmu.pojo.WechatLoginResponse;
 import com.gdmu.service.AuthService;
 import com.gdmu.util.JwtUtil;
+import com.gdmu.util.NicknameGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,6 +65,8 @@ public class AuthServiceImpl implements AuthService {
             } else {
                 User newUser = new User();
                 newUser.setOpenid(openid);
+                String randomNickname = NicknameGenerator.generate();
+                newUser.setNickname(randomNickname);
                 userMapper.insert(newUser);
 
                 String token = jwtUtil.generateToken(newUser.getId(), openid);
