@@ -1,12 +1,19 @@
 package com.gdmu.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gdmu.mapper.UserMapper;
 import com.gdmu.pojo.User;
+import com.gdmu.pojo.WechatCode2SessionResponse;
+import com.gdmu.pojo.WechatLoginResponse;
 import com.gdmu.service.AuthService;
+import com.gdmu.util.JwtUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,31 +26,79 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    @Value("${wechat.app-id}")
+    private String appId;
+
+    @Value("${wechat.app-secret}")
+    private String appSecret;
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
-    public Map<String, Object> wechatLogin(String openid) {
-        log.info("处理微信登录: {}", openid);
+    public WechatLoginResponse wechatLogin(String code) {
+        log.info("处理微信登录: {}", code);
 
         try {
-
-            // 2查询用户是否存在
-            User user = userMapper.selectByOpenid(openid);
-            Map<String, Object> result = new HashMap<>();
-            if (user != null) {
-                // 老用户
-                log.info("老用户，学号: {}", user.getStudentId());
-                result.put("registered", true);
-                result.put("studentId", user.getStudentId());
-            } else {
-                // 新用户
-                log.info("新用户，需要绑定学号");
-                result.put("registered", false);
+            String openid = getOpenidFromWechat(code);
+            if (openid == null) {
+                throw new RuntimeException("获取微信openid失败");
             }
 
-            return result;
+            User user = userMapper.selectByOpenid(openid);
+            WechatLoginResponse response = new WechatLoginResponse();
+
+            if (user != null) {
+                String token = jwtUtil.generateToken(user.getId(), openid);
+                response.setToken(token);
+                response.setRegistered(user.getStudentId() != null);
+                response.setStudentId(user.getStudentId());
+                response.setUserId(user.getId());
+                log.info("老用户登录成功，userId: {}", user.getId());
+            } else {
+                User newUser = new User();
+                newUser.setOpenid(openid);
+                userMapper.insert(newUser);
+
+                String token = jwtUtil.generateToken(newUser.getId(), openid);
+                response.setToken(token);
+                response.setRegistered(false);
+                response.setUserId(newUser.getId());
+                log.info("新用户注册成功，userId: {}", newUser.getId());
+            }
+
+            return response;
 
         } catch (Exception e) {
             log.error("微信登录处理失败: {}", e.getMessage());
             throw new RuntimeException("登录处理失败: " + e.getMessage());
+        }
+    }
+
+    private String getOpenidFromWechat(String code) {
+        String url = String.format(
+                "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code",
+                appId, appSecret, code
+        );
+
+        try {
+            ResponseEntity<String> response = restTemplate.getForEntity(url, String.class);
+            WechatCode2SessionResponse wechatResponse = objectMapper.readValue(
+                    response.getBody(), WechatCode2SessionResponse.class
+            );
+
+            if (wechatResponse.getErrcode() != null && wechatResponse.getErrcode() != 0) {
+                log.error("微信接口返回错误: {}", wechatResponse.getErrmsg());
+                return null;
+            }
+
+            return wechatResponse.getOpenid();
+        } catch (Exception e) {
+            log.error("调用微信接口失败: {}", e.getMessage());
+            return null;
         }
     }
 
@@ -53,26 +108,21 @@ public class AuthServiceImpl implements AuthService {
         log.info("绑定学号，openid: {}, studentId: {}", openid, studentId);
 
         try {
-            // 1. 验证学号格式
             if (!studentId.matches("^24\\d{9}$")) {
                 throw new RuntimeException("学号格式不正确（24开头11位数字）");
             }
 
-            // 2. 检查学号是否已存在
             if (userMapper.existsByStudentId(studentId) > 0) {
                 throw new RuntimeException("该学号已被绑定");
             }
 
-            // 3. 创建用户
-            User user = new User();
-            user.setOpenid(openid);
-            user.setStudentId(studentId);
-
-            // 4. 保存到数据库
-            int rows = userMapper.insert(user);
-            if (rows <= 0) {
-                throw new RuntimeException("保存用户失败");
+            User user = userMapper.selectByOpenid(openid);
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
             }
+
+            user.setStudentId(studentId);
+            userMapper.update(user);
 
             log.info("绑定成功，用户ID: {}", user.getId());
 

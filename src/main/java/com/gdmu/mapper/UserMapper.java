@@ -24,7 +24,7 @@ public interface UserMapper {
     int insert(User user);
     
     // 更新用户信息
-    @Update("UPDATE users SET nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone} WHERE id = #{id}")
+    @Update("UPDATE users SET student_id = #{studentId}, nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone} WHERE id = #{id}")
     int update(User user);
     
     // 根据学号查询用户
