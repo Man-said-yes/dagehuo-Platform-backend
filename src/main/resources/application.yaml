@@ -23,6 +23,7 @@ mybatis:
 wechat:
   app-id: your_app_id_here
   app-secret: your_app_secret_here
+  test-mode: true  # 测试模式：true-使用code作为openid，false-调用真实微信接口
 
 # JWT配置
 jwt:

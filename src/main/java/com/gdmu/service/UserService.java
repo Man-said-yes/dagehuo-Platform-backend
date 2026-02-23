@@ -1,4 +1,11 @@
 package com.gdmu.service;
 
-public class UserService {
+import com.gdmu.pojo.User;
+
+public interface UserService {
+    User getUserById(Long id);
+    
+    User getUserByOpenid(String openid);
+    
+    void updateUser(Long userId, String nickname, String avatar, Integer gender, String phone);
 }

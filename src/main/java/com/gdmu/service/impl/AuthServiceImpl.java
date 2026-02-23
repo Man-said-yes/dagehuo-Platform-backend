@@ -35,6 +35,9 @@ public class AuthServiceImpl implements AuthService {
     @Value("${wechat.app-secret}")
     private String appSecret;
 
+    @Value("${wechat.test-mode:false}")
+    private boolean testMode;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -79,6 +82,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private String getOpenidFromWechat(String code) {
+        if (testMode) {
+            log.info("测试模式开启，直接使用code作为openid: {}", code);
+            return code;
+        }
+
         String url = String.format(
                 "https://api.weixin.qq.com/sns/jscode2session?appid=%s&secret=%s&js_code=%s&grant_type=authorization_code",
                 appId, appSecret, code
