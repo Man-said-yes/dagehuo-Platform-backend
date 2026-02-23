@@ -4,6 +4,8 @@ import com.gdmu.pojo.BindRequest;
 import com.gdmu.pojo.LoginRequest;
 import com.gdmu.pojo.Result;
 import com.gdmu.service.impl.AuthServiceImpl;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -18,11 +20,14 @@ import java.util.Map;
     @Validated
     //允许跨域请求
     @CrossOrigin(origins = "*")
+    //Swagger标签
+    @Tag(name = "认证管理", description = "微信登录、学号绑定等认证相关接口")
 public class AuthController {
 
         @Autowired
         private AuthServiceImpl authService;
         //登录
+        @Operation(summary = "微信登录", description = "通过微信openid登录，返回用户注册状态")
         @PostMapping("/login")
         public Result login(@Valid @RequestBody LoginRequest request) {
             try {
@@ -33,6 +38,7 @@ public class AuthController {
             }
         }
         //绑定学号
+        @Operation(summary = "绑定学号", description = "将微信openid与学号绑定")
         @PostMapping("/bind")
         public Result bind(@Valid @RequestBody BindRequest request) {
             try {
@@ -47,6 +53,7 @@ public class AuthController {
             }
         }
         //前端可调用的证明已联通测试
+        @Operation(summary = "服务连通性测试", description = "测试服务是否正常运行")
         @GetMapping("/test")
         public Result test() {
             Map<String, Object> data = new HashMap<>();
