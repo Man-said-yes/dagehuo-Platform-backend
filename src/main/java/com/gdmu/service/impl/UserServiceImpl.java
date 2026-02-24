@@ -90,4 +90,28 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("更新昵称失败: " + e.getMessage());
         }
     }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateCreditScore(Long userId, Integer creditScore) {
+        log.info("更新用户信誉分，userId: {}, creditScore: {}", userId, creditScore);
+        
+        try {
+            User user = userMapper.selectById(userId);
+            if (user == null) {
+                throw new RuntimeException("用户不存在");
+            }
+            
+            int rows = userMapper.updateCreditScore(userId, creditScore);
+            if (rows <= 0) {
+                throw new RuntimeException("更新信誉分失败");
+            }
+            
+            log.info("用户信誉分更新成功，userId: {}, creditScore: {}", userId, creditScore);
+            
+        } catch (Exception e) {
+            log.error("更新用户信誉分失败: {}", e.getMessage());
+            throw new RuntimeException("更新信誉分失败: " + e.getMessage());
+        }
+    }
 }

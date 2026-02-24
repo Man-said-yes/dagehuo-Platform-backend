@@ -10,4 +10,6 @@ public interface UserService {
     void updateUser(Long userId, String nickname, String avatar, Integer gender, String phone);
     
     void updateNickname(Long userId, String nickname);
+    
+    void updateCreditScore(Long userId, Integer creditScore);
 }

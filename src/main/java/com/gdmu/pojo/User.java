@@ -12,6 +12,7 @@ public class User {
     private String avatar;      // 头像URL
     private Integer gender;     // 性别：0未知，1男，2女
     private String phone;       // 手机号
+    private Integer creditScore; // 信誉分
     private Date createTime;
     private Date updateTime;
 }

@@ -67,4 +67,21 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+    
+    @Operation(summary = "更新信誉分", description = "更新用户的信誉分")
+    @PutMapping("/credit/{userId}")
+    public Result updateCreditScore(
+            @PathVariable Long userId,
+            @RequestBody Map<String, Integer> request) {
+        try {
+            Integer creditScore = request.get("creditScore");
+            if (creditScore == null) {
+                return Result.error("信誉分不能为空");
+            }
+            userService.updateCreditScore(userId, creditScore);
+            return Result.success("信誉分更新成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

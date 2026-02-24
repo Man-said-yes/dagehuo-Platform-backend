@@ -67,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
                 newUser.setOpenid(openid);
                 String randomNickname = NicknameGenerator.generate();
                 newUser.setNickname(randomNickname);
+                newUser.setCreditScore(100); // 设置默认信誉分
                 userMapper.insert(newUser);
 
                 String token = jwtUtil.generateToken(newUser.getId(), openid);
