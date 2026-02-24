@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS meal_events (
     max_people INT DEFAULT 10 COMMENT '最大参与人数',
     current_people INT DEFAULT 0 COMMENT '当前参与人数',
     status TINYINT DEFAULT 1 COMMENT '活动状态：1招募中，2进行中，3已结束，4已取消',
+    type TINYINT DEFAULT 0 COMMENT '活动类型：0其他，1运动，2约饭，3学习，4游戏，5出行',
     creator_id BIGINT NOT NULL COMMENT '创建者ID',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
