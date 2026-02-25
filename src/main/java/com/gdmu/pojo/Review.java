@@ -10,7 +10,7 @@ import java.util.Date;
 @Data
 public class Review {
     private Long id;                 // 主键ID
-    private Long mealEventId;        // 搭伙活动ID
+    private Long activityId;        // 活动ID
     private Long reviewerId;         // 评价者ID
     private Long reviewedId;         // 被评价者ID
     private Integer rating;          // 评分：1-5星

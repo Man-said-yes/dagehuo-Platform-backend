@@ -1,9 +1,9 @@
 package com.gdmu.controller;
 
 import com.gdmu.pojo.CreateEventRequest;
-import com.gdmu.pojo.MealEvent;
+import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Result;
-import com.gdmu.service.MealEventService;
+import com.gdmu.service.ActivityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +20,7 @@ import java.util.List;
 public class EventController {
 
     @Autowired
-    private MealEventService mealEventService;
+    private ActivityService activityService;
 
     @Operation(summary = "发布活动", description = "创建新的搭伙活动")
     @PostMapping
@@ -44,7 +44,7 @@ public class EventController {
             }
 
             // 创建活动
-            MealEvent mealEvent = mealEventService.createEvent(
+            Activity activity = activityService.createActivity(
                     userId,
                     request.getType(),
                     request.getTitle(),
@@ -54,7 +54,7 @@ public class EventController {
                     request.getMaxPeople()
             );
 
-            return Result.success(mealEvent);
+            return Result.success(activity);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -64,11 +64,11 @@ public class EventController {
     @GetMapping("/{eventId}")
     public Result getEventDetail(@PathVariable Long eventId) {
         try {
-            MealEvent mealEvent = mealEventService.getEventById(eventId);
-            if (mealEvent == null) {
+            Activity activity = activityService.getActivityById(eventId);
+            if (activity == null) {
                 return Result.error("活动不存在");
             }
-            return Result.success(mealEvent);
+            return Result.success(activity);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -78,11 +78,11 @@ public class EventController {
     @GetMapping("/list")
     public Result getEventList(@RequestParam(value = "type", required = false) Integer type) {
         try {
-            List<MealEvent> events;
+            List<Activity> events;
             if (type != null) {
-                events = mealEventService.getEventsByType(type);
+                events = activityService.getActivitiesByType(type);
             } else {
-                events = mealEventService.getAllEvents();
+                events = activityService.getAllActivities();
             }
             return Result.success(events);
         } catch (Exception e) {
@@ -95,7 +95,7 @@ public class EventController {
     public Result getMyEvents(jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
             Long userId = (Long) httpRequest.getAttribute("userId");
-            List<MealEvent> events = mealEventService.getEventsByCreatorId(userId);
+            List<Activity> events = activityService.getActivitiesByCreatorId(userId);
             return Result.success(events);
         } catch (Exception e) {
             return Result.error(e.getMessage());
@@ -111,16 +111,16 @@ public class EventController {
         try {
             Long userId = (Long) httpRequest.getAttribute("userId");
             // 验证活动是否存在且属于当前用户
-            MealEvent existingEvent = mealEventService.getEventById(eventId);
-            if (existingEvent == null) {
+            Activity existingActivity = activityService.getActivityById(eventId);
+            if (existingActivity == null) {
                 return Result.error("活动不存在");
             }
-            if (!existingEvent.getCreatorId().equals(userId)) {
+            if (!existingActivity.getCreatorId().equals(userId)) {
                 return Result.error("无权限更新此活动");
             }
 
             // 更新活动
-            mealEventService.updateEvent(
+            activityService.updateActivity(
                     eventId,
                     request.getTitle(),
                     request.getDescription(),
@@ -128,7 +128,7 @@ public class EventController {
                     request.getEventTime(),
                     request.getMaxPeople(),
                     request.getType(),
-                    existingEvent.getStatus() // 保持原状态
+                    existingActivity.getStatus() // 保持原状态
             );
 
             return Result.success("活动更新成功");
@@ -145,16 +145,16 @@ public class EventController {
         try {
             Long userId = (Long) httpRequest.getAttribute("userId");
             // 验证活动是否存在且属于当前用户
-            MealEvent existingEvent = mealEventService.getEventById(eventId);
-            if (existingEvent == null) {
+            Activity existingActivity = activityService.getActivityById(eventId);
+            if (existingActivity == null) {
                 return Result.error("活动不存在");
             }
-            if (!existingEvent.getCreatorId().equals(userId)) {
+            if (!existingActivity.getCreatorId().equals(userId)) {
                 return Result.error("无权限删除此活动");
             }
 
             // 删除活动
-            mealEventService.deleteEvent(eventId);
+            activityService.deleteActivity(eventId);
             return Result.success("活动删除成功");
         } catch (Exception e) {
             return Result.error(e.getMessage());

@@ -14,7 +14,7 @@ public interface ReviewMapper {
     /**
      * 发布评价
      */
-    @Insert("INSERT INTO reviews(meal_event_id, reviewer_id, reviewed_id, rating, content) VALUES(#{mealEventId}, #{reviewerId}, #{reviewedId}, #{rating}, #{content})")
+    @Insert("INSERT INTO reviews(activity_id, reviewer_id, reviewed_id, rating, content) VALUES(#{mealEventId}, #{reviewerId}, #{reviewedId}, #{rating}, #{content})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Review review);
     
@@ -27,8 +27,8 @@ public interface ReviewMapper {
     /**
      * 根据活动ID查询评价
      */
-    @Select("SELECT * FROM reviews WHERE meal_event_id = #{mealEventId}")
-    List<Review> selectByMealEventId(Long mealEventId);
+    @Select("SELECT * FROM reviews WHERE activity_id = #{activityId}")
+    List<Review> selectByActivityId(Long activityId);
     
     /**
      * 根据被评价者ID查询评价
