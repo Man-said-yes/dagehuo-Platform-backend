@@ -116,8 +116,8 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void bindStudent(String openid, String studentId) {
-        log.info("绑定学号，openid: {}, studentId: {}", openid, studentId);
+    public void bindStudent(Long userId, String studentId) {
+        log.info("绑定学号，userId: {}, studentId: {}", userId, studentId);
 
         try {
             if (!studentId.matches("^24\\d{9}$")) {
@@ -128,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new RuntimeException("该学号已被绑定");
             }
 
-            User user = userMapper.selectByOpenid(openid);
+            User user = userMapper.selectById(userId);
             if (user == null) {
                 throw new RuntimeException("用户不存在");
             }
@@ -142,5 +142,15 @@ public class AuthServiceImpl implements AuthService {
             log.error("绑定学号失败: {}", e.getMessage());
             throw new RuntimeException("绑定失败: " + e.getMessage());
         }
+    }
+    
+    // 兼容旧的方法
+    @Transactional(rollbackFor = Exception.class)
+    public void bindStudent(String openid, String studentId) {
+        User user = userMapper.selectByOpenid(openid);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        bindStudent(user.getId(), studentId);
     }
 }

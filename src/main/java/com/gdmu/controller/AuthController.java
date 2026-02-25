@@ -25,22 +25,28 @@ public class AuthController {
     @Autowired
     private AuthServiceImpl authService;
 
-    @Operation(summary = "微信登录", description = "通过微信code登录，返回JWT token和用户信息")
+    @Operation(summary = "微信登录", description = "通过微信code登录，返回JWT token")
     @PostMapping("/login")
     public Result login(@Valid @RequestBody WechatLoginRequest request) {
         try {
             WechatLoginResponse result = authService.wechatLogin(request.getCode());
-            return Result.success(result);
+            // 只返回token字段
+            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            data.put("TOKEN", result.getToken());
+            return Result.success(data);
         } catch (Exception e) {
             return Result.error("登录失败: " + e.getMessage());
         }
     }
 
-    @Operation(summary = "绑定学号", description = "将微信openid与学号绑定")
+    @Operation(summary = "绑定学号", description = "将当前用户与学号绑定")
     @PostMapping("/bind")
-    public Result bind(@Valid @RequestBody BindRequest request) {
+    public Result bind(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @Valid @RequestBody BindRequest request) {
         try {
-            authService.bindStudent(request.getOpenid(), request.getStudentId());
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            authService.bindStudent(userId, request.getStudentId());
 
             Map<String, Object> data = new HashMap<>();
             data.put("studentId", request.getStudentId());

@@ -24,6 +24,11 @@ public class MealEventServiceImpl implements MealEventService {
                 creatorId, type, title, location, eventTime, maxPeople);
 
         try {
+            // 验证 creatorId 不为 null
+            if (creatorId == null) {
+                throw new RuntimeException("用户ID不能为空");
+            }
+
             MealEvent mealEvent = new MealEvent();
             mealEvent.setTitle(title);
             mealEvent.setDescription(description);

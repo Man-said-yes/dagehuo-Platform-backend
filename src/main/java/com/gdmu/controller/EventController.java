@@ -25,8 +25,9 @@ public class EventController {
     @Operation(summary = "发布活动", description = "创建新的搭伙活动")
     @PostMapping
     public Result createEvent(
-            @RequestHeader("userId") Long userId,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             @RequestBody CreateEventRequest request) {
+        Long userId = (Long) httpRequest.getAttribute("userId");
         try {
             // 验证必填参数
             if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
@@ -91,8 +92,9 @@ public class EventController {
 
     @Operation(summary = "获取我的活动", description = "获取当前用户创建的活动")
     @GetMapping("/my")
-    public Result getMyEvents(@RequestHeader("userId") Long userId) {
+    public Result getMyEvents(jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
             List<MealEvent> events = mealEventService.getEventsByCreatorId(userId);
             return Result.success(events);
         } catch (Exception e) {
@@ -104,9 +106,10 @@ public class EventController {
     @PutMapping("/{eventId}")
     public Result updateEvent(
             @PathVariable Long eventId,
-            @RequestHeader("userId") Long userId,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             @RequestBody CreateEventRequest request) {
         try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
             // 验证活动是否存在且属于当前用户
             MealEvent existingEvent = mealEventService.getEventById(eventId);
             if (existingEvent == null) {
@@ -138,8 +141,9 @@ public class EventController {
     @DeleteMapping("/{eventId}")
     public Result deleteEvent(
             @PathVariable Long eventId,
-            @RequestHeader("userId") Long userId) {
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
             // 验证活动是否存在且属于当前用户
             MealEvent existingEvent = mealEventService.getEventById(eventId);
             if (existingEvent == null) {
