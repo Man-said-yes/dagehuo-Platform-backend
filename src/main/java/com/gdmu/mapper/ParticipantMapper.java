@@ -14,21 +14,21 @@ public interface ParticipantMapper {
     /**
      * 报名参加搭伙活动
      */
-    @Insert("INSERT INTO activity_participant(activity_id, user_id, status) VALUES(#{mealEventId}, #{userId}, #{status})")
+    @Insert("INSERT INTO activity_participant(activity_id, user_id, status) VALUES(#{activityId}, #{userId}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Participant participant);
     
     /**
      * 根据活动ID和用户ID查询参与者
      */
-    @Select("SELECT * FROM activity_participant WHERE activity_id = #{mealEventId} AND user_id = #{userId}")
-    Participant selectByMealEventIdAndUserId(Long mealEventId, Long userId);
+    @Select("SELECT * FROM activity_participant WHERE activity_id = #{activityId} AND user_id = #{userId}")
+    Participant selectByActivityIdAndUserId(@Param("activityId") Long activityId, @Param("userId") Long userId);
     
     /**
      * 根据活动ID查询所有参与者
      */
-    @Select("SELECT * FROM activity_participant WHERE activity_id = #{mealEventId}")
-    List<Participant> selectByMealEventId(Long mealEventId);
+    @Select("SELECT * FROM activity_participant WHERE activity_id = #{activityId}")
+    List<Participant> selectByActivityId(@Param("activityId") Long activityId);
     
     /**
      * 根据用户ID查询所有参与的活动
@@ -45,6 +45,6 @@ public interface ParticipantMapper {
     /**
      * 取消参加活动
      */
-    @Delete("DELETE FROM activity_participant WHERE activity_id = #{mealEventId} AND user_id = #{userId}")
-    int deleteByMealEventIdAndUserId(Long mealEventId, Long userId);
+    @Delete("DELETE FROM activity_participant WHERE activity_id = #{activityId} AND user_id = #{userId}")
+    int deleteByActivityIdAndUserId(@Param("activityId") Long activityId, @Param("userId") Long userId);
 }

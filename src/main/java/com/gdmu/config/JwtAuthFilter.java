@@ -24,9 +24,12 @@ public class JwtAuthFilter implements Filter {
         
         log.info("JWT过滤器开始处理请求，uri: {}", request.getRequestURI());
         
-        // 跳过登录和测试接口的认证
+        // 跳过登录、测试接口和Swagger相关路径的认证
         String requestUri = request.getRequestURI();
-        if (requestUri.equals("/api/auth/login") || requestUri.equals("/api/auth/test")) {
+        if (requestUri.equals("/api/auth/login") || 
+            requestUri.equals("/api/auth/test") ||
+            requestUri.startsWith("/swagger-ui") ||
+            requestUri.startsWith("/v3/api-docs")) {
             log.info("跳过认证，uri: {}", requestUri);
             filterChain.doFilter(request, response);
             return;

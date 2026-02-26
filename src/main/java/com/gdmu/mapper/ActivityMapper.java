@@ -20,9 +20,26 @@ public interface ActivityMapper {
     @Select("SELECT * FROM activity ORDER BY create_time DESC")
     List<Activity> selectAll();
 
+    // 查询所有活动（分页）
+    @Select("SELECT * FROM activity ORDER BY create_time DESC LIMIT #{offset}, #{pageSize}")
+    List<Activity> selectAllWithPagination(@Param("offset") int offset, @Param("pageSize") int pageSize);
+
     // 根据类型查询活动
     @Select("SELECT * FROM activity WHERE type = #{type} ORDER BY create_time DESC")
     List<Activity> selectByType(Integer type);
+
+    // 根据类型查询活动（分页）
+    @Select("SELECT * FROM activity WHERE type = #{type} ORDER BY create_time DESC LIMIT #{offset}, #{pageSize}")
+    List<Activity> selectByTypeWithPagination(@Param("type") Integer type, @Param("offset") int offset, @Param("pageSize") int pageSize);
+
+    // 查询活动总数
+    @Select({"<script>",
+            "SELECT COUNT(*) FROM activity",
+            "<if test='type != null'>",
+            "WHERE type = #{type}",
+            "</if>",
+            "</script>"})
+    int countActivities(@Param("type") Integer type);
 
     // 根据创建者ID查询活动
     @Select("SELECT * FROM activity WHERE creator_id = #{creatorId} ORDER BY create_time DESC")

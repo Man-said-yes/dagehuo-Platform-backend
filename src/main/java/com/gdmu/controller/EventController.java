@@ -60,7 +60,7 @@ public class EventController {
         }
     }
 
-    @Operation(summary = "获取活动详情", description = "根据活动ID获取活动详细信息")
+    @Operation(summary = "获取活动详情", description = "根据活动ID获取活动详细信息，包含参与者ID列表")
     @GetMapping("/{eventId}")
     public Result getEventDetail(@PathVariable Long eventId) {
         try {
@@ -68,23 +68,52 @@ public class EventController {
             if (activity == null) {
                 return Result.error("活动不存在");
             }
-            return Result.success(activity);
+            
+            // 获取活动参与者ID列表
+            List<Long> participantIds = activityService.getActivityParticipants(eventId);
+            
+            // 构建响应对象，包含活动信息和参与者ID列表
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("activity", activity);
+            response.put("participants", participantIds);
+            
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
     }
 
-    @Operation(summary = "获取活动列表", description = "获取所有活动列表")
+    @Operation(summary = "获取活动列表", description = "获取所有活动列表，支持按类型筛选和分页")
     @GetMapping("/list")
-    public Result getEventList(@RequestParam(value = "type", required = false) Integer type) {
+    public Result getEventList(
+            @RequestParam(value = "type", required = false) Integer type,
+            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
         try {
+            // 验证分页参数
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            
             List<Activity> events;
+            int total;
+            
             if (type != null) {
-                events = activityService.getActivitiesByType(type);
+                events = activityService.getActivitiesByType(type, page, pageSize);
+                total = activityService.getActivityCount(type);
             } else {
-                events = activityService.getAllActivities();
+                events = activityService.getAllActivities(page, pageSize);
+                total = activityService.getActivityCount(null);
             }
-            return Result.success(events);
+            
+            // 构建分页响应
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("list", events);
+            response.put("total", total);
+            response.put("page", page);
+            response.put("pageSize", pageSize);
+            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -156,6 +185,46 @@ public class EventController {
             // 删除活动
             activityService.deleteActivity(eventId);
             return Result.success("活动删除成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "加入活动", description = "用户加入指定活动")
+    @PostMapping("/{eventId}/join")
+    public Result joinEvent(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            activityService.joinActivity(eventId, userId);
+            return Result.success("加入活动成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "退出活动", description = "用户退出指定活动")
+    @PostMapping("/{eventId}/exit")
+    public Result exitEvent(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            activityService.exitActivity(eventId, userId);
+            return Result.success("退出活动成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取我参与的活动", description = "获取当前用户参与的所有活动")
+    @GetMapping("/participated")
+    public Result getParticipatedEvents(jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            List<Activity> events = activityService.getActivitiesByParticipantId(userId);
+            return Result.success(events);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
