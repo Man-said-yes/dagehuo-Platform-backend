@@ -10,8 +10,8 @@ import lombok.Data;
 @Schema(name = "Result", description = "统一返回结果")
 public class Result {
 
-    @Schema(description = "状态码：1成功，0失败", example = "1")
-    private Integer code; //编码：1成功，0为失败
+    @Schema(description = "状态码：200成功，400失败", example = "200")
+    private Integer code; //编码：200成功，400为失败
     
     @Schema(description = "错误信息", example = "success")
     private String msg; //错误信息
@@ -22,7 +22,7 @@ public class Result {
     //成功
     public static Result success() {
         Result result = new Result();
-        result.code = 1;
+        result.code = 200;
         result.msg = "success";
         return result;
     }
@@ -31,7 +31,7 @@ public class Result {
     public static Result success(Object object) {
         Result result = new Result();
         result.data = object;
-        result.code = 1;
+        result.code = 200;
         result.msg = "success";
         return result;
     }
@@ -39,7 +39,7 @@ public class Result {
     public static Result success(String msg, Object object) {
         Result result = new Result();
         result.data = object;
-        result.code = 1;
+        result.code = 200;
         result.msg = "success";
         return result;
     }
@@ -48,7 +48,7 @@ public class Result {
     public static Result error(String msg) {
         Result result = new Result();
         result.msg = msg;
-        result.code = 0;
+        result.code = 400;
         return result;
     }
 
