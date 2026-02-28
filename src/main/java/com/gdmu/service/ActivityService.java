@@ -64,4 +64,9 @@ public interface ActivityService {
      * 获取活动的参与者列表
      */
     List<Long> getActivityParticipants(Long activityId);
+
+    /**
+     * 更新活动状态
+     */
+    void updateActivityStatus(Long activityId, Integer status);
 }

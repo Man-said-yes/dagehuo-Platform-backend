@@ -5,6 +5,7 @@ import com.gdmu.mapper.ParticipantMapper;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Participant;
 import com.gdmu.service.ActivityService;
+import com.gdmu.service.ChatService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,12 @@ public class ActivityServiceImpl implements ActivityService {
 
     @Autowired
     private ParticipantMapper participantMapper;
+
+    @Autowired
+    private ChatService chatService;
+
+    @Autowired
+    private com.gdmu.mapper.ChatGroupMemberMapper chatGroupMemberMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -59,6 +66,16 @@ public class ActivityServiceImpl implements ActivityService {
             int participantRows = participantMapper.insert(participant);
             if (participantRows <= 0) {
                 throw new RuntimeException("添加参与者失败");
+            }
+
+            // 创建活动对应的聊天群
+            try {
+                var group = chatService.createGroup(activity.getId(), activity.getTitle() + "-聊天群");
+                // 将创建者添加到聊天群
+                chatService.addGroupMember(group.getId(), creatorId);
+                log.info("活动聊天群创建成功，activityId: {}, groupId: {}", activity.getId(), group.getId());
+            } catch (Exception e) {
+                log.warn("创建聊天群失败，不影响活动创建: {}", e.getMessage());
             }
 
             log.info("活动创建成功，eventId: {}，创建者已自动加入", activity.getId());
@@ -210,11 +227,58 @@ public class ActivityServiceImpl implements ActivityService {
             int newCurrentPeople = activity.getCurrentPeople() + 1;
             activityMapper.updateCurrentPeople(activityId, newCurrentPeople);
 
+            // 检查是否达到最大人数，如果是，将活动状态改为进行中
+            if (newCurrentPeople >= activity.getMaxPeople()) {
+                activityMapper.updateStatus(activityId, 2); // 2-进行中
+                log.info("活动人数已满，状态变更为进行中，activityId: {}", activityId);
+            }
+
+            // 将用户添加到活动的聊天群
+            try {
+                var group = chatService.getGroupByActivityId(activityId);
+                if (group != null) {
+                    chatService.addGroupMember(group.getId(), userId);
+                    log.info("用户加入活动聊天群成功，groupId: {}, userId: {}", group.getId(), userId);
+                }
+            } catch (Exception e) {
+                log.warn("加入聊天群失败，不影响活动加入: {}", e.getMessage());
+            }
+
             log.info("用户加入活动成功，activityId: {}, userId: {}", activityId, userId);
 
         } catch (Exception e) {
             log.error("用户加入活动失败: {}", e.getMessage());
             throw new RuntimeException("加入活动失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateActivityStatus(Long activityId, Integer status) {
+        log.info("更新活动状态，activityId: {}, status: {}", activityId, status);
+
+        try {
+            // 检查活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                throw new RuntimeException("活动不存在");
+            }
+
+            // 验证状态值是否合法
+            if (status == null || (status != 1 && status != 2 && status != 3 && status != 4)) {
+                throw new RuntimeException("无效的活动状态值");
+            }
+
+            int rows = activityMapper.updateStatus(activityId, status);
+            if (rows <= 0) {
+                throw new RuntimeException("更新活动状态失败");
+            }
+
+            log.info("活动状态更新成功，activityId: {}, status: {}", activityId, status);
+
+        } catch (Exception e) {
+            log.error("更新活动状态失败: {}", e.getMessage());
+            throw new RuntimeException("更新活动状态失败: " + e.getMessage());
         }
     }
 
@@ -246,6 +310,26 @@ public class ActivityServiceImpl implements ActivityService {
             int newCurrentPeople = activity.getCurrentPeople() - 1;
             if (newCurrentPeople < 0) newCurrentPeople = 0;
             activityMapper.updateCurrentPeople(activityId, newCurrentPeople);
+
+            // 将用户从活动的聊天群中移除
+            log.info("开始处理用户退出聊天群，activityId: {}", activityId);
+            var group = chatService.getGroupByActivityId(activityId);
+            if (group != null) {
+                log.info("找到聊天群，groupId: {}, 准备移除用户: {}", group.getId(), userId);
+                try {
+                    // 直接使用mapper删除，模仿参与者表的退出逻辑
+                    int removeRows = chatGroupMemberMapper.deleteByGroupIdAndUserId(group.getId(), userId);
+                    if (removeRows > 0) {
+                        log.info("用户退出活动聊天群成功，groupId: {}, userId: {}", group.getId(), userId);
+                    } else {
+                        log.warn("用户未在聊天群中，groupId: {}, userId: {}", group.getId(), userId);
+                    }
+                } catch (Exception e) {
+                    log.error("退出聊天群失败，错误信息: {}", e.getMessage(), e);
+                }
+            } else {
+                log.warn("未找到活动对应的聊天群，activityId: {}", activityId);
+            }
 
             log.info("用户退出活动成功，activityId: {}, userId: {}", activityId, userId);
 

@@ -1,3 +1,9 @@
+-- 创建数据库（如果不存在）
+CREATE DATABASE IF NOT EXISTS dagehuo CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 使用数据库
+USE dagehuo;
+
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
@@ -10,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     credit_score INT DEFAULT 100 COMMENT '信誉分：默认100分',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信息表';
 
 -- 活动表
 CREATE TABLE IF NOT EXISTS activity (
@@ -27,7 +33,7 @@ CREATE TABLE IF NOT EXISTS activity (
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动表';
 
 -- 参与者表
 CREATE TABLE IF NOT EXISTS activity_participant (
@@ -37,10 +43,10 @@ CREATE TABLE IF NOT EXISTS activity_participant (
     status TINYINT DEFAULT 1 COMMENT '参与状态：1已报名，2已参与，3已取消',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    UNIQUE (activity_id, user_id),
+    UNIQUE KEY uk_activity_user (activity_id, user_id),
     FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='参与者表';
 
 -- 消息表
 CREATE TABLE IF NOT EXISTS messages (
@@ -52,7 +58,7 @@ CREATE TABLE IF NOT EXISTS messages (
     is_read TINYINT DEFAULT 0 COMMENT '是否已读：0未读，1已读',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息表';
 
 -- 评价表
 CREATE TABLE IF NOT EXISTS reviews (
@@ -66,22 +72,41 @@ CREATE TABLE IF NOT EXISTS reviews (
     FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
     FOREIGN KEY (reviewer_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (reviewed_id) REFERENCES users(id) ON DELETE CASCADE
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='评价表';
 
--- 插入测试数据
-INSERT INTO users (openid, student_id, nickname, avatar, gender) VALUES
-('test_openid_001', '24000000001', '张三', 'https://example.com/avatar1.jpg', 1),
-('test_openid_002', '24000000002', '李四', 'https://example.com/avatar2.jpg', 2),
-('test_openid_003', '24000000003', '王五', 'https://example.com/avatar3.jpg', 1);
+-- 聊天群表
+CREATE TABLE IF NOT EXISTS chat_group (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '群聊ID',
+    name VARCHAR(100) NOT NULL COMMENT '群聊名称',
+    type TINYINT DEFAULT 1 COMMENT '群聊类型：1-系统消息群, 2-活动群, 3-自定义群',
+    activity_id BIGINT COMMENT '关联的活动ID（如果是活动群）',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天群表';
 
--- 插入测试活动
-INSERT INTO activity (title, description, event_time, location, max_people, current_people, status, type, creator_id) VALUES
-('想打羽毛球缺1人', '希望找到羽毛球爱好者一起打球，水平不限，开心就好！', '2024-12-31 19:00:00', '体育馆3号场', 3, 1, 1, 1, 1),
-('周末一起去图书馆学习', '期末复习，寻找志同道合的同学一起学习', '2024-12-28 14:00:00', '图书馆二楼', 5, 1, 1, 3, 2),
-('约饭：食堂三楼', '想找个人一起吃饭，聊天', '2024-12-27 12:00:00', '食堂三楼', 2, 1, 1, 2, 3);
+-- 群成员表
+CREATE TABLE IF NOT EXISTS chat_group_member (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    group_id BIGINT NOT NULL COMMENT '群聊ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    join_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+    last_read_message_id BIGINT COMMENT '最后已读消息ID',
+    UNIQUE KEY uk_group_user (group_id, user_id),
+    FOREIGN KEY (group_id) REFERENCES chat_group(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='群成员表';
 
--- 插入测试参与者
-INSERT INTO activity_participant (activity_id, user_id, status) VALUES
-(1, 1, 1),
-(2, 2, 1),
-(3, 3, 1);
+-- 聊天消息表
+CREATE TABLE IF NOT EXISTS chat_message (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
+    group_id BIGINT NOT NULL COMMENT '群聊ID',
+    user_id BIGINT COMMENT '发送者ID（系统消息为null）',
+    content TEXT NOT NULL COMMENT '消息内容',
+    type TINYINT DEFAULT 1 COMMENT '消息类型：1-文本, 2-系统消息',
+    send_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    FOREIGN KEY (group_id) REFERENCES chat_group(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';
+
+-- 初始化系统消息群
+INSERT INTO chat_group (name, type) VALUES ('系统消息', 1);

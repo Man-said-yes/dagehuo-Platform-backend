@@ -229,4 +229,35 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "更新活动状态", description = "更新活动状态（1-招募中，2-进行中，3-已结束，4-已取消）")
+    @PutMapping("/{eventId}/status")
+    public Result updateEventStatus(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @RequestBody java.util.Map<String, Integer> request) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            // 验证活动是否存在且属于当前用户
+            Activity existingActivity = activityService.getActivityById(eventId);
+            if (existingActivity == null) {
+                return Result.error("活动不存在");
+            }
+            if (!existingActivity.getCreatorId().equals(userId)) {
+                return Result.error("无权限更新此活动状态");
+            }
+
+            // 获取状态值
+            Integer status = request.get("status");
+            if (status == null) {
+                return Result.error("状态值不能为空");
+            }
+
+            // 更新活动状态
+            activityService.updateActivityStatus(eventId, status);
+            return Result.success("活动状态更新成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
