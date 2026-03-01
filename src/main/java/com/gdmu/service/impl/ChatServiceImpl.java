@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +130,7 @@ public class ChatServiceImpl implements ChatService {
         message.setUserId(userId);
         message.setContent(content);
         message.setType(type != null ? type : 1);
+        message.setSendTime(new Date()); // 手动设置发送时间
 
         int rows = chatMessageMapper.insert(message);
         if (rows <= 0) {
@@ -186,6 +188,13 @@ public class ChatServiceImpl implements ChatService {
         redisChatUtil.resetUnreadCount(userId, groupId);
     }
 
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    private com.gdmu.websocket.ChatWebSocketHandler getChatWebSocketHandler() {
+        return applicationContext.getBean(com.gdmu.websocket.ChatWebSocketHandler.class);
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void addGroupMember(Long groupId, Long userId) {
@@ -200,6 +209,15 @@ public class ChatServiceImpl implements ChatService {
             int rows = chatGroupMemberMapper.insert(member);
             if (rows <= 0) {
                 throw new RuntimeException("添加群成员失败");
+            }
+            
+            // 如果用户已经在线，立即添加到该群的在线用户列表
+            com.gdmu.websocket.ChatWebSocketHandler handler = getChatWebSocketHandler();
+            if (handler.isUserOnline(userId)) {
+                log.info("用户{}已在线，添加到群{}的在线列表", userId, groupId);
+                redisChatUtil.addOnlineUser(groupId, userId);
+                // 广播用户加入群的消息
+                handler.broadcastUserStatus(groupId, userId, true);
             }
         }
     }
