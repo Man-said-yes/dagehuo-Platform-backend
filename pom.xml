@@ -102,6 +102,12 @@
 			<artifactId>json</artifactId>
 			<version>20231013</version>
 		</dependency>
+		<!-- 阿里云OSS依赖 -->
+		<dependency>
+			<groupId>com.aliyun.oss</groupId>
+			<artifactId>aliyun-sdk-oss</artifactId>
+			<version>3.17.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>

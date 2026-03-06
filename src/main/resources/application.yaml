@@ -37,3 +37,11 @@ wechat:
 jwt:
   secret: dagehuo-platform-secret-key-2024
   expiration: 31536000000
+
+# 阿里云OSS配置
+ali yun:
+  oss:
+    endpoint: oss-cn-beijing.aliyuncs.com  # 替换为你的Bucket地域节点（控制台Bucket概览可查）
+    accessKeyId: your_access_key_id_here           # 替换为实际值
+    accessKeySecret: your_access_key_secret_here  # 替换为实际值
+    bucketName: your_bucket_name_here             # 替换为你创建的Bucket名称
