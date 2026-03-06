@@ -195,4 +195,24 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "更新当前用户信誉分", description = "更新当前登录用户的信誉分")
+    @PutMapping("/credit")
+    public Result updateCurrentUserCreditScore(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @RequestBody Map<String, Integer> request) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            Integer creditScore = request.get("creditScore");
+            
+            if (creditScore == null) {
+                return Result.error("信誉分不能为空");
+            }
+            
+            userService.updateCreditScore(userId, creditScore);
+            return Result.success("信誉分更新成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }
