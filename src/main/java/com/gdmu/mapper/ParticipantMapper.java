@@ -47,4 +47,16 @@ public interface ParticipantMapper {
      */
     @Delete("DELETE FROM activity_participant WHERE activity_id = #{activityId} AND user_id = #{userId}")
     int deleteByActivityIdAndUserId(@Param("activityId") Long activityId, @Param("userId") Long userId);
+    
+    /**
+     * 根据活动ID查询参与者ID列表
+     */
+    @Select("SELECT user_id FROM activity_participant WHERE activity_id = #{activityId}")
+    List<Long> selectParticipantIdsByActivityId(@Param("activityId") Long activityId);
+    
+    /**
+     * 根据用户ID查询参与的活动ID列表
+     */
+    @Select("SELECT activity_id FROM activity_participant WHERE user_id = #{userId}")
+    List<Long> selectActivityIdsByUserId(Long userId);
 }
