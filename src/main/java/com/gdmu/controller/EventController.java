@@ -1,6 +1,7 @@
 package com.gdmu.controller;
 
 import com.gdmu.pojo.CreateEventRequest;
+import com.gdmu.pojo.DistanceQueryRequest;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Result;
 import com.gdmu.service.ActivityService;
@@ -285,31 +286,32 @@ public class EventController {
     }
 
     @Operation(summary = "根据距离查询活动（由近及远）", description = "根据用户当前位置的经度和纬度，由近及远查询活动列表")
-    @GetMapping("/list/nearby")
-    public Result getNearbyEvents(
-            @RequestParam(value = "longitude", required = true) Double longitude,
-            @RequestParam(value = "latitude", required = true) Double latitude,
-            @RequestParam(value = "type", required = false) Integer type,
-            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
-            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+    @PostMapping("/list/nearby")
+    public Result getNearbyEvents(@RequestBody DistanceQueryRequest request) {
         try {
             // 验证参数
-            if (longitude == null || latitude == null) {
+            if (request.getLongitude() == null || request.getLatitude() == null) {
                 return Result.error("经纬度不能为空");
             }
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            if (request.getPage() < 1) request.setPage(1);
+            if (request.getPageSize() < 1 || request.getPageSize() > 100) request.setPageSize(10);
             
-            List<Activity> events = activityService.getActivitiesByDistanceAsc(longitude, latitude, type, page, pageSize);
-            int total = activityService.getActivityCountByDistance(type);
+            List<Activity> events = activityService.getActivitiesByDistanceAsc(
+                    request.getLongitude(), 
+                    request.getLatitude(), 
+                    request.getType(), 
+                    request.getPage(), 
+                    request.getPageSize()
+            );
+            int total = activityService.getActivityCountByDistance(request.getType());
             
             // 构建分页响应
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("list", events);
             response.put("total", total);
-            response.put("page", page);
-            response.put("pageSize", pageSize);
-            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            response.put("page", request.getPage());
+            response.put("pageSize", request.getPageSize());
+            response.put("totalPages", (total + request.getPageSize() - 1) / request.getPageSize());
             
             return Result.success(response);
         } catch (Exception e) {
@@ -318,31 +320,32 @@ public class EventController {
     }
 
     @Operation(summary = "根据距离查询活动（由远及近）", description = "根据用户当前位置的经度和纬度，由远及近查询活动列表")
-    @GetMapping("/list/distant")
-    public Result getDistantEvents(
-            @RequestParam(value = "longitude", required = true) Double longitude,
-            @RequestParam(value = "latitude", required = true) Double latitude,
-            @RequestParam(value = "type", required = false) Integer type,
-            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
-            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+    @PostMapping("/list/distant")
+    public Result getDistantEvents(@RequestBody DistanceQueryRequest request) {
         try {
             // 验证参数
-            if (longitude == null || latitude == null) {
+            if (request.getLongitude() == null || request.getLatitude() == null) {
                 return Result.error("经纬度不能为空");
             }
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            if (request.getPage() < 1) request.setPage(1);
+            if (request.getPageSize() < 1 || request.getPageSize() > 100) request.setPageSize(10);
             
-            List<Activity> events = activityService.getActivitiesByDistanceDesc(longitude, latitude, type, page, pageSize);
-            int total = activityService.getActivityCountByDistance(type);
+            List<Activity> events = activityService.getActivitiesByDistanceDesc(
+                    request.getLongitude(), 
+                    request.getLatitude(), 
+                    request.getType(), 
+                    request.getPage(), 
+                    request.getPageSize()
+            );
+            int total = activityService.getActivityCountByDistance(request.getType());
             
             // 构建分页响应
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("list", events);
             response.put("total", total);
-            response.put("page", page);
-            response.put("pageSize", pageSize);
-            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            response.put("page", request.getPage());
+            response.put("pageSize", request.getPageSize());
+            response.put("totalPages", (total + request.getPageSize() - 1) / request.getPageSize());
             
             return Result.success(response);
         } catch (Exception e) {
