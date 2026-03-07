@@ -2,6 +2,7 @@ package com.gdmu.service.impl;
 
 import com.gdmu.mapper.ActivityMapper;
 import com.gdmu.mapper.ParticipantMapper;
+import com.gdmu.mapper.UserMapper;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Participant;
 import com.gdmu.service.ActivityService;
@@ -29,11 +30,14 @@ public class ActivityServiceImpl implements ActivityService {
     @Autowired
     private com.gdmu.mapper.ChatGroupMemberMapper chatGroupMemberMapper;
 
+    @Autowired
+    private UserMapper userMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Activity createActivity(Long creatorId, Integer type, String title, String description, String location, java.util.Date eventTime, Integer maxPeople) {
-        log.info("创建新活动，creatorId: {}, type: {}, title: {}, location: {}, eventTime: {}, maxPeople: {}",
-                creatorId, type, title, location, eventTime, maxPeople);
+    public Activity createActivity(Long creatorId, Integer type, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople) {
+        log.info("创建新活动，creatorId: {}, type: {}, title: {}, location: {}, campus: {}, longitude: {}, latitude: {}, eventTime: {}, maxPeople: {}",
+                creatorId, type, title, location, campus, longitude, latitude, eventTime, maxPeople);
 
         try {
             // 验证 creatorId 不为 null
@@ -41,15 +45,23 @@ public class ActivityServiceImpl implements ActivityService {
                 throw new RuntimeException("用户ID不能为空");
             }
 
+            // 查询创建者信息，获取highCredit值
+            var creator = userMapper.selectById(creatorId);
+            Integer creatorHighCredit = creator != null && creator.getHighCredit() != null ? creator.getHighCredit() : 0;
+            
             Activity activity = new Activity();
             activity.setTitle(title);
             activity.setDescription(description);
             activity.setLocation(location);
+            activity.setCampus(campus);
+            activity.setLongitude(longitude);
+            activity.setLatitude(latitude);
             activity.setEventTime(eventTime);
             activity.setMaxPeople(maxPeople);
             activity.setCurrentPeople(1); // 初始参与人数为1（创建者）
             activity.setStatus(1); // 初始状态为招募中
             activity.setType(type != null ? type : 0); // 默认类型为其他
+            activity.setHighCredit(creatorHighCredit); // 设置活动的高信用标识
             activity.setCreatorId(creatorId);
 
             int rows = activityMapper.insert(activity);
@@ -94,17 +106,17 @@ public class ActivityServiceImpl implements ActivityService {
     }
 
     @Override
-    public List<Activity> getAllActivities(int page, int pageSize) {
-        log.info("查询所有活动（分页），page: {}, pageSize: {}", page, pageSize);
+    public List<Activity> getAllActivities(int page, int pageSize, String sortBy, String order) {
+        log.info("查询所有活动（分页），page: {}, pageSize: {}, sortBy: {}, order: {}", page, pageSize, sortBy, order);
         int offset = (page - 1) * pageSize;
-        return activityMapper.selectAllWithPagination(offset, pageSize);
+        return activityMapper.selectAllWithPagination(offset, pageSize, sortBy, order);
     }
 
     @Override
-    public List<Activity> getActivitiesByType(Integer type, int page, int pageSize) {
-        log.info("查询活动类型（分页）: {}, page: {}, pageSize: {}", type, page, pageSize);
+    public List<Activity> getActivitiesByType(Integer type, int page, int pageSize, String sortBy, String order) {
+        log.info("查询活动类型（分页）: {}, page: {}, pageSize: {}, sortBy: {}, order: {}", type, page, pageSize, sortBy, order);
         int offset = (page - 1) * pageSize;
-        return activityMapper.selectByTypeWithPagination(type, offset, pageSize);
+        return activityMapper.selectByTypeWithPagination(type, offset, pageSize, sortBy, order);
     }
 
     @Override
@@ -121,7 +133,7 @@ public class ActivityServiceImpl implements ActivityService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateActivity(Long eventId, String title, String description, String location, java.util.Date eventTime, Integer maxPeople, Integer type, Integer status) {
+    public void updateActivity(Long eventId, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople, Integer type, Integer status) {
         log.info("更新活动信息，eventId: {}", eventId);
 
         try {
@@ -138,6 +150,15 @@ public class ActivityServiceImpl implements ActivityService {
             }
             if (location != null) {
                 activity.setLocation(location);
+            }
+            if (campus != null) {
+                activity.setCampus(campus);
+            }
+            if (longitude != null) {
+                activity.setLongitude(longitude);
+            }
+            if (latitude != null) {
+                activity.setLatitude(latitude);
             }
             if (eventTime != null) {
                 activity.setEventTime(eventTime);
@@ -394,5 +415,25 @@ public class ActivityServiceImpl implements ActivityService {
             log.error("查询活动参与者失败: {}", e.getMessage());
             throw new RuntimeException("查询参与者失败: " + e.getMessage());
         }
+    }
+
+    @Override
+    public List<Activity> getActivitiesByDistanceAsc(Double longitude, Double latitude, Integer type, int page, int pageSize) {
+        log.info("根据距离查询活动（由近及远），longitude: {}, latitude: {}, type: {}, page: {}, pageSize: {}", longitude, latitude, type, page, pageSize);
+        int offset = (page - 1) * pageSize;
+        return activityMapper.selectByDistanceAsc(longitude, latitude, type, offset, pageSize);
+    }
+
+    @Override
+    public List<Activity> getActivitiesByDistanceDesc(Double longitude, Double latitude, Integer type, int page, int pageSize) {
+        log.info("根据距离查询活动（由远及近），longitude: {}, latitude: {}, type: {}, page: {}, pageSize: {}", longitude, latitude, type, page, pageSize);
+        int offset = (page - 1) * pageSize;
+        return activityMapper.selectByDistanceDesc(longitude, latitude, type, offset, pageSize);
+    }
+
+    @Override
+    public int getActivityCountByDistance(Integer type) {
+        log.info("查询符合距离条件的活动总数，type: {}", type);
+        return activityMapper.countActivitiesByDistance(type);
     }
 }

@@ -8,7 +8,7 @@ public interface ActivityService {
     /**
      * 创建活动
      */
-    Activity createActivity(Long creatorId, Integer type, String title, String description, String location, java.util.Date eventTime, Integer maxPeople);
+    Activity createActivity(Long creatorId, Integer type, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople);
 
     /**
      * 根据ID查询活动
@@ -16,14 +16,14 @@ public interface ActivityService {
     Activity getActivityById(Long id);
 
     /**
-     * 查询所有活动（分页）
+     * 查询所有活动（分页，支持排序）
      */
-    List<Activity> getAllActivities(int page, int pageSize);
+    List<Activity> getAllActivities(int page, int pageSize, String sortBy, String order);
 
     /**
-     * 根据类型查询活动（分页）
+     * 根据类型查询活动（分页，支持排序）
      */
-    List<Activity> getActivitiesByType(Integer type, int page, int pageSize);
+    List<Activity> getActivitiesByType(Integer type, int page, int pageSize, String sortBy, String order);
 
     /**
      * 查询活动总数
@@ -38,7 +38,7 @@ public interface ActivityService {
     /**
      * 更新活动信息
      */
-    void updateActivity(Long eventId, String title, String description, String location, java.util.Date eventTime, Integer maxPeople, Integer type, Integer status);
+    void updateActivity(Long eventId, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople, Integer type, Integer status);
 
     /**
      * 删除活动
@@ -69,4 +69,19 @@ public interface ActivityService {
      * 更新活动状态
      */
     void updateActivityStatus(Long activityId, Integer status);
+    
+    /**
+     * 根据距离查询活动（由近及远）
+     */
+    List<Activity> getActivitiesByDistanceAsc(Double longitude, Double latitude, Integer type, int page, int pageSize);
+    
+    /**
+     * 根据距离查询活动（由远及近）
+     */
+    List<Activity> getActivitiesByDistanceDesc(Double longitude, Double latitude, Integer type, int page, int pageSize);
+    
+    /**
+     * 查询符合距离条件的活动总数
+     */
+    int getActivityCountByDistance(Integer type);
 }

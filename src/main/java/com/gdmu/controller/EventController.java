@@ -50,6 +50,9 @@ public class EventController {
                     request.getTitle(),
                     request.getDescription(),
                     request.getLocation(),
+                    request.getCampus(),
+                    request.getLongitude(),
+                    request.getLatitude(),
                     request.getEventTime(),
                     request.getMaxPeople()
             );
@@ -83,12 +86,14 @@ public class EventController {
         }
     }
 
-    @Operation(summary = "获取活动列表", description = "获取所有活动列表，支持按类型筛选和分页")
+    @Operation(summary = "获取活动列表", description = "获取所有活动列表，支持按类型筛选、分页和时间排序")
     @GetMapping("/list")
     public Result getEventList(
             @RequestParam(value = "type", required = false) Integer type,
             @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
-            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize,
+            @RequestParam(value = "sortBy", defaultValue = "createTime", required = false) String sortBy,
+            @RequestParam(value = "order", defaultValue = "desc", required = false) String order) {
         try {
             // 验证分页参数
             if (page < 1) page = 1;
@@ -97,11 +102,26 @@ public class EventController {
             List<Activity> events;
             int total;
             
+            // 验证排序参数
+            if (!sortBy.equals("createTime") && !sortBy.equals("eventTime")) {
+                sortBy = "createTime"; // 默认按创建时间排序
+            }
+            if (!order.equals("asc") && !order.equals("desc")) {
+                order = "desc"; // 默认倒序
+            }
+            
+            // 转换排序字段名
+            if (sortBy.equals("createTime")) {
+                sortBy = "create_time";
+            } else if (sortBy.equals("eventTime")) {
+                sortBy = "event_time";
+            }
+            
             if (type != null) {
-                events = activityService.getActivitiesByType(type, page, pageSize);
+                events = activityService.getActivitiesByType(type, page, pageSize, sortBy, order);
                 total = activityService.getActivityCount(type);
             } else {
-                events = activityService.getAllActivities(page, pageSize);
+                events = activityService.getAllActivities(page, pageSize, sortBy, order);
                 total = activityService.getActivityCount(null);
             }
             
@@ -154,6 +174,9 @@ public class EventController {
                     request.getTitle(),
                     request.getDescription(),
                     request.getLocation(),
+                    request.getCampus(),
+                    request.getLongitude(),
+                    request.getLatitude(),
                     request.getEventTime(),
                     request.getMaxPeople(),
                     request.getType(),
@@ -256,6 +279,72 @@ public class EventController {
             // 更新活动状态
             activityService.updateActivityStatus(eventId, status);
             return Result.success("活动状态更新成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "根据距离查询活动（由近及远）", description = "根据用户当前位置的经度和纬度，由近及远查询活动列表")
+    @GetMapping("/list/nearby")
+    public Result getNearbyEvents(
+            @RequestParam(value = "longitude", required = true) Double longitude,
+            @RequestParam(value = "latitude", required = true) Double latitude,
+            @RequestParam(value = "type", required = false) Integer type,
+            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+        try {
+            // 验证参数
+            if (longitude == null || latitude == null) {
+                return Result.error("经纬度不能为空");
+            }
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            
+            List<Activity> events = activityService.getActivitiesByDistanceAsc(longitude, latitude, type, page, pageSize);
+            int total = activityService.getActivityCountByDistance(type);
+            
+            // 构建分页响应
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("list", events);
+            response.put("total", total);
+            response.put("page", page);
+            response.put("pageSize", pageSize);
+            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            
+            return Result.success(response);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "根据距离查询活动（由远及近）", description = "根据用户当前位置的经度和纬度，由远及近查询活动列表")
+    @GetMapping("/list/distant")
+    public Result getDistantEvents(
+            @RequestParam(value = "longitude", required = true) Double longitude,
+            @RequestParam(value = "latitude", required = true) Double latitude,
+            @RequestParam(value = "type", required = false) Integer type,
+            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+        try {
+            // 验证参数
+            if (longitude == null || latitude == null) {
+                return Result.error("经纬度不能为空");
+            }
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            
+            List<Activity> events = activityService.getActivitiesByDistanceDesc(longitude, latitude, type, page, pageSize);
+            int total = activityService.getActivityCountByDistance(type);
+            
+            // 构建分页响应
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("list", events);
+            response.put("total", total);
+            response.put("page", page);
+            response.put("pageSize", pageSize);
+            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            
+            return Result.success(response);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

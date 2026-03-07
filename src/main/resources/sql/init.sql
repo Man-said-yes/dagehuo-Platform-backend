@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     gender TINYINT DEFAULT 0 COMMENT '性别：0未知，1男，2女',
     phone VARCHAR(20) COMMENT '手机号',
     credit_score INT DEFAULT 100 COMMENT '信誉分：默认100分',
+    high_credit TINYINT DEFAULT 0 COMMENT '高信誉分标识：0否，1是',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信息表';
@@ -25,10 +26,14 @@ CREATE TABLE IF NOT EXISTS activity (
     description TEXT COMMENT '活动描述',
     event_time DATETIME NOT NULL COMMENT '活动时间',
     location VARCHAR(100) NOT NULL COMMENT '活动地点',
+    campus VARCHAR(50) COMMENT '校区',
+    longitude DOUBLE COMMENT '经度',
+    latitude DOUBLE COMMENT '纬度',
     max_people INT DEFAULT 10 COMMENT '最大参与人数',
     current_people INT DEFAULT 0 COMMENT '当前参与人数',
     status TINYINT DEFAULT 1 COMMENT '活动状态：1招募中，2进行中，3已结束，4已取消',
     type TINYINT DEFAULT 0 COMMENT '活动类型：0其他，1运动，2约饭，3学习，4游戏，5出行',
+    high_credit TINYINT DEFAULT 0 COMMENT '高信用标识：0否，1是',
     creator_id BIGINT NOT NULL COMMENT '创建者ID',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

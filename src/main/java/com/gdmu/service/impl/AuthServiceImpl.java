@@ -69,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
                 newUser.setNickname(randomNickname);
                 newUser.setAvatar("https://jinejie-java-ai.oss-cn-beijing.aliyuncs.com/001.jpg"); // 设置默认头像
                 newUser.setCreditScore(100); // 设置默认信誉分
+                newUser.setHighCredit(0); // 设置默认高信誉分标识为0
                 userMapper.insert(newUser);
 
                 String token = jwtUtil.generateToken(newUser.getId(), openid);

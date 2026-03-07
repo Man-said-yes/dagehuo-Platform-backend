@@ -13,6 +13,7 @@ public class User {
     private Integer gender;     // 性别：0未知，1男，2女
     private String phone;       // 手机号
     private Integer creditScore; // 信誉分
+    private Integer highCredit; // 高信誉分标识：0否，1是
     private Date createTime;
     private Date updateTime;
 }

@@ -10,6 +10,9 @@ public class CreateEventRequest {
     private String title;       // 活动标题
     private String description; // 活动描述
     private String location;    // 活动地点
+    private String campus;      // 校区
+    private Double longitude;   // 经度
+    private Double latitude;    // 纬度
     private Date eventTime;     // 活动时间
     private Integer maxPeople;  // 最大参与人数
 }
