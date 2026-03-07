@@ -166,7 +166,7 @@ public class UserController {
             // 返回头像 URL
             Map<String, String> result = new HashMap<>();
             result.put("avatarUrl", avatarUrl);
-            return Result.success(result, "头像上传成功");
+            return Result.success("头像上传成功", result);
         } catch (Exception e) {
             return Result.error("头像上传失败: " + e.getMessage());
         }
