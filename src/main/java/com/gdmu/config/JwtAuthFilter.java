@@ -27,6 +27,7 @@ public class JwtAuthFilter implements Filter {
         // 跳过登录、测试接口、Swagger相关路径、H2控制台、WebSocket和其他静态资源的认证
         String requestUri = request.getRequestURI();
         if (requestUri.equals("/api/auth/login") || 
+            requestUri.equals("/api/auth/admin/login") ||
             requestUri.equals("/api/auth/test") ||
             requestUri.startsWith("/api/redis/") ||
             requestUri.startsWith("/swagger-ui") ||
