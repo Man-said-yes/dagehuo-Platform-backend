@@ -14,7 +14,7 @@ public interface MessageMapper {
     /**
      * 发送消息
      */
-    @Insert("INSERT INTO messages(user_id, title, content, type) VALUES(#{userId}, #{title}, #{content}, #{type})")
+    @Insert("INSERT INTO messages(user_id, title, content, type, create_time) VALUES(#{userId}, #{title}, #{content}, #{type}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Message message);
     

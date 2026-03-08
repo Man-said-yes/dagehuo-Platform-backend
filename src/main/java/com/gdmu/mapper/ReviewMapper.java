@@ -14,7 +14,7 @@ public interface ReviewMapper {
     /**
      * 发布评价
      */
-    @Insert("INSERT INTO reviews(activity_id, reviewer_id, reviewed_id, rating, content) VALUES(#{mealEventId}, #{reviewerId}, #{reviewedId}, #{rating}, #{content})")
+    @Insert("INSERT INTO reviews(activity_id, reviewer_id, reviewed_id, rating, content, create_time) VALUES(#{mealEventId}, #{reviewerId}, #{reviewedId}, #{rating}, #{content}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Review review);
     

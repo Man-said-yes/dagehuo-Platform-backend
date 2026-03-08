@@ -7,7 +7,7 @@ import java.util.List;
 
 @Mapper
 public interface ChatMessageMapper {
-    @Insert("INSERT INTO chat_message(group_id, user_id, content, type) VALUES(#{groupId}, #{userId}, #{content}, #{type})")
+    @Insert("INSERT INTO chat_message(group_id, user_id, content, type, send_time) VALUES(#{groupId}, #{userId}, #{content}, #{type}, NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(ChatMessage chatMessage);
 

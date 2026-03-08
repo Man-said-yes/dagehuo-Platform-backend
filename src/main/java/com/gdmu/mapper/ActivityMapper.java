@@ -8,7 +8,7 @@ import java.util.List;
 @Mapper
 public interface ActivityMapper {
     // 创建活动
-    @Insert("INSERT INTO activity(title, description, event_time, location, max_people, current_people, status, type, creator_id) VALUES(#{title}, #{description}, #{eventTime}, #{location}, #{maxPeople}, #{currentPeople}, #{status}, #{type}, #{creatorId})")
+    @Insert("INSERT INTO activity(title, description, event_time, location, max_people, current_people, status, type, creator_id, create_time, update_time) VALUES(#{title}, #{description}, #{eventTime}, #{location}, #{maxPeople}, #{currentPeople}, #{status}, #{type}, #{creatorId}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Activity activity);
 

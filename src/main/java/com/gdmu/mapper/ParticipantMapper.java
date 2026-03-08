@@ -14,7 +14,7 @@ public interface ParticipantMapper {
     /**
      * 报名参加搭伙活动
      */
-    @Insert("INSERT INTO activity_participant(activity_id, user_id, status) VALUES(#{activityId}, #{userId}, #{status})")
+    @Insert("INSERT INTO activity_participant(activity_id, user_id, status, create_time, update_time) VALUES(#{activityId}, #{userId}, #{status}, NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Participant participant);
     
