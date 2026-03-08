@@ -215,4 +215,40 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "给用户添加信誉分（靠谱）", description = "给指定用户添加5分信誉分，并记录到信誉分历史记录")
+    @PostMapping("/credit/add/{userId}")
+    public Result addCreditScore(
+            @PathVariable Long userId) {
+        try {
+            userService.addCreditScore(userId);
+            return Result.success("信誉分添加成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "给用户扣除信誉分（鸽子）", description = "给指定用户扣除5分信誉分，并记录到信誉分历史记录")
+    @PostMapping("/credit/deduct/{userId}")
+    public Result deductCreditScore(
+            @PathVariable Long userId) {
+        try {
+            userService.deductCreditScore(userId);
+            return Result.success("信誉分扣除成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "查询用户信誉分历史记录", description = "查询指定用户的信誉分变化历史记录")
+    @GetMapping("/credit/history/{userId}")
+    public Result getCreditRecordHistory(
+            @PathVariable Long userId) {
+        try {
+            java.util.List<com.gdmu.pojo.UserCreditRecord> records = userService.getCreditRecordHistory(userId);
+            return Result.success(records);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

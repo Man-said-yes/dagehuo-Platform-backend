@@ -352,4 +352,147 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "获取活动参与者详情", description = "获取指定活动的所有参与者详细信息")
+    @GetMapping("/{eventId}/participants")
+    public Result getEventParticipantsInfo(@PathVariable Long eventId) {
+        try {
+            // 检查活动是否存在
+            Activity activity = activityService.getActivityById(eventId);
+            if (activity == null) {
+                return Result.error("活动不存在");
+            }
+            
+            // 获取活动参与者详细信息
+            List<com.gdmu.pojo.User> participants = activityService.getActivityParticipantsInfo(eventId);
+            
+            return Result.success(participants);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "举报活动", description = "用户举报指定活动")
+    @PostMapping("/{eventId}/report")
+    public Result reportEvent(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @RequestBody java.util.Map<String, String> request) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            String reportReason = request.get("reportReason");
+            
+            if (reportReason == null || reportReason.trim().isEmpty()) {
+                return Result.error("举报理由不能为空");
+            }
+            
+            activityService.reportActivity(eventId, userId, reportReason);
+            return Result.success("举报成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "获取被举报活动列表", description = "获取所有被举报活动的列表，支持分页")
+    @GetMapping("/report/list")
+    public Result getReportedEvents(
+            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+        try {
+            // 验证分页参数
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            
+            List<com.gdmu.pojo.ActivityReport> reports = activityService.getReportedActivities(page, pageSize);
+            int total = activityService.getReportedActivityCount();
+            
+            // 构建分页响应
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("list", reports);
+            response.put("total", total);
+            response.put("page", page);
+            response.put("pageSize", pageSize);
+            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            
+            return Result.success(response);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "根据处理状态获取被举报活动列表", description = "根据处理状态获取被举报活动的列表，支持分页")
+    @GetMapping("/report/list/status")
+    public Result getReportedEventsByStatus(
+            @RequestParam(value = "status", required = true) Integer status,
+            @RequestParam(value = "page", defaultValue = "1", required = false) Integer page,
+            @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
+        try {
+            // 验证分页参数
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+            
+            List<com.gdmu.pojo.ActivityReport> reports = activityService.getReportedActivitiesByStatus(status, page, pageSize);
+            int total = activityService.getReportedActivityCountByStatus(status);
+            
+            // 构建分页响应
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("list", reports);
+            response.put("total", total);
+            response.put("page", page);
+            response.put("pageSize", pageSize);
+            response.put("totalPages", (total + pageSize - 1) / pageSize);
+            
+            return Result.success(response);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "取消活动", description = "取消指定活动（设置状态为4-已取消）")
+    @PostMapping("/{eventId}/cancel")
+    public Result cancelEvent(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            // 验证活动是否存在且属于当前用户
+            Activity existingActivity = activityService.getActivityById(eventId);
+            if (existingActivity == null) {
+                return Result.error("活动不存在");
+            }
+            if (!existingActivity.getCreatorId().equals(userId)) {
+                return Result.error("无权限取消此活动");
+            }
+
+            // 取消活动（设置状态为4）
+            activityService.updateActivityStatus(eventId, 4);
+            return Result.success("活动取消成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "结束活动", description = "结束指定活动（设置状态为3-已结束）")
+    @PostMapping("/{eventId}/end")
+    public Result endEvent(
+            @PathVariable Long eventId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            // 验证活动是否存在且属于当前用户
+            Activity existingActivity = activityService.getActivityById(eventId);
+            if (existingActivity == null) {
+                return Result.error("活动不存在");
+            }
+            if (!existingActivity.getCreatorId().equals(userId)) {
+                return Result.error("无权限结束此活动");
+            }
+
+            // 结束活动（设置状态为3）
+            activityService.updateActivityStatus(eventId, 3);
+            return Result.success("活动结束成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

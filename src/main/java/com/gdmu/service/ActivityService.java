@@ -66,6 +66,11 @@ public interface ActivityService {
     List<Long> getActivityParticipants(Long activityId);
 
     /**
+     * 获取活动的参与者详细信息列表
+     */
+    List<com.gdmu.pojo.User> getActivityParticipantsInfo(Long activityId);
+
+    /**
      * 更新活动状态
      */
     void updateActivityStatus(Long activityId, Integer status);
@@ -84,4 +89,29 @@ public interface ActivityService {
      * 查询符合距离条件的活动总数
      */
     int getActivityCountByDistance(Integer type);
+
+    /**
+     * 举报活动
+     */
+    void reportActivity(Long activityId, Long reporterUserId, String reportReason);
+
+    /**
+     * 获取被举报活动列表（分页）
+     */
+    List<com.gdmu.pojo.ActivityReport> getReportedActivities(int page, int pageSize);
+
+    /**
+     * 获取被举报活动总数
+     */
+    int getReportedActivityCount();
+
+    /**
+     * 根据处理状态获取被举报活动列表（分页）
+     */
+    List<com.gdmu.pojo.ActivityReport> getReportedActivitiesByStatus(Integer handleStatus, int page, int pageSize);
+
+    /**
+     * 根据处理状态获取被举报活动总数
+     */
+    int getReportedActivityCountByStatus(Integer handleStatus);
 }

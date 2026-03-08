@@ -33,6 +33,9 @@ public class ActivityServiceImpl implements ActivityService {
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private ActivityReportMapper activityReportMapper;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Activity createActivity(Long creatorId, Integer type, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople) {
@@ -418,6 +421,45 @@ public class ActivityServiceImpl implements ActivityService {
     }
 
     @Override
+    public List<com.gdmu.pojo.User> getActivityParticipantsInfo(Long activityId) {
+        log.info("查询活动的参与者详细信息，activityId: {}", activityId);
+
+        try {
+            // 检查活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                throw new RuntimeException("活动不存在");
+            }
+
+            // 查询活动的所有参与者
+            List<Participant> participants = participantMapper.selectByActivityId(activityId);
+            if (participants.isEmpty()) {
+                return java.util.Collections.emptyList();
+            }
+
+            // 提取参与者ID列表
+            java.util.List<Long> participantIds = participants.stream()
+                    .map(Participant::getUserId)
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 查询每个参与者的详细信息
+            java.util.List<com.gdmu.pojo.User> users = new java.util.ArrayList<>();
+            for (Long userId : participantIds) {
+                com.gdmu.pojo.User user = userMapper.selectById(userId);
+                if (user != null) {
+                    users.add(user);
+                }
+            }
+
+            return users;
+
+        } catch (Exception e) {
+            log.error("查询活动参与者详细信息失败: {}", e.getMessage());
+            throw new RuntimeException("查询参与者详细信息失败: " + e.getMessage());
+        }
+    }
+
+    @Override
     public List<Activity> getActivitiesByDistanceAsc(Double longitude, Double latitude, Integer type, int page, int pageSize) {
         log.info("根据距离查询活动（由近及远），longitude: {}, latitude: {}, type: {}, page: {}, pageSize: {}", longitude, latitude, type, page, pageSize);
         int offset = (page - 1) * pageSize;
@@ -435,5 +477,106 @@ public class ActivityServiceImpl implements ActivityService {
     public int getActivityCountByDistance(Integer type) {
         log.info("查询符合距离条件的活动总数，type: {}", type);
         return activityMapper.countActivitiesByDistance(type);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reportActivity(Long activityId, Long reporterUserId, String reportReason) {
+        log.info("举报活动，activityId: {}, reporterUserId: {}, reportReason: {}", activityId, reporterUserId, reportReason);
+
+        try {
+            // 检查活动是否存在
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                throw new RuntimeException("活动不存在");
+            }
+
+            // 检查举报理由是否为空
+            if (reportReason == null || reportReason.trim().isEmpty()) {
+                throw new RuntimeException("举报理由不能为空");
+            }
+
+            // 创建举报记录
+            com.gdmu.pojo.ActivityReport report = new com.gdmu.pojo.ActivityReport();
+            report.setActivityId(activityId);
+            report.setReporterUserId(reporterUserId);
+            report.setReportReason(reportReason);
+
+            int rows = activityReportMapper.insert(report);
+            if (rows <= 0) {
+                throw new RuntimeException("举报失败");
+            }
+
+            log.info("活动举报成功，reportId: {}", report.getId());
+
+        } catch (Exception e) {
+            log.error("举报活动失败: {}", e.getMessage());
+            throw new RuntimeException("举报活动失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public List<com.gdmu.pojo.ActivityReport> getReportedActivities(int page, int pageSize) {
+        log.info("获取被举报活动列表，page: {}, pageSize: {}", page, pageSize);
+
+        try {
+            // 验证分页参数
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+            int offset = (page - 1) * pageSize;
+            return activityReportMapper.selectAllWithPagination(offset, pageSize);
+
+        } catch (Exception e) {
+            log.error("获取被举报活动列表失败: {}", e.getMessage());
+            throw new RuntimeException("获取被举报活动列表失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int getReportedActivityCount() {
+        log.info("获取被举报活动总数");
+        return activityReportMapper.countReports();
+    }
+
+    @Override
+    public List<com.gdmu.pojo.ActivityReport> getReportedActivitiesByStatus(Integer handleStatus, int page, int pageSize) {
+        log.info("根据处理状态获取被举报活动列表，handleStatus: {}, page: {}, pageSize: {}", handleStatus, page, pageSize);
+
+        try {
+            // 验证分页参数
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 10;
+
+            // 验证处理状态
+            if (handleStatus == null || (handleStatus != 0 && handleStatus != 1 && handleStatus != 2)) {
+                throw new RuntimeException("无效的处理状态");
+            }
+
+            int offset = (page - 1) * pageSize;
+            return activityReportMapper.selectByHandleStatus(handleStatus, offset, pageSize);
+
+        } catch (Exception e) {
+            log.error("根据处理状态获取被举报活动列表失败: {}", e.getMessage());
+            throw new RuntimeException("获取被举报活动列表失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public int getReportedActivityCountByStatus(Integer handleStatus) {
+        log.info("根据处理状态获取被举报活动总数，handleStatus: {}", handleStatus);
+
+        try {
+            // 验证处理状态
+            if (handleStatus == null || (handleStatus != 0 && handleStatus != 1 && handleStatus != 2)) {
+                throw new RuntimeException("无效的处理状态");
+            }
+
+            return activityReportMapper.countReportsByHandleStatus(handleStatus);
+
+        } catch (Exception e) {
+            log.error("根据处理状态获取被举报活动总数失败: {}", e.getMessage());
+            throw new RuntimeException("获取被举报活动总数失败: " + e.getMessage());
+        }
     }
 }

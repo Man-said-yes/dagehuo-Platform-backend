@@ -115,3 +115,26 @@ CREATE TABLE IF NOT EXISTS chat_message (
 
 -- 初始化系统消息群
 INSERT INTO chat_group (name, type) VALUES ('系统消息', 1);
+
+-- 用户信誉分记录
+CREATE TABLE IF NOT EXISTS user_credit_record (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    credit_change INT NOT NULL COMMENT '信誉分变化值（正数加分，负数扣分）',
+    reason VARCHAR(100) NOT NULL COMMENT '变化原因',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录时间',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信誉分记录表';
+
+-- 活动举报表
+CREATE TABLE IF NOT EXISTS activity_report (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键（唯一标识一条举报记录）',
+    activity_id BIGINT NOT NULL COMMENT '外键，关联 activity.id（哪个活动被举报）',
+    reporter_user_id BIGINT NOT NULL COMMENT '外键，关联 users.id（谁举报的，记录用户 ID 保护隐私）',
+    report_reason VARCHAR(255) NOT NULL COMMENT '举报理由（如 "活动虚假""涉违规内容"，前端可做下拉选择 + 自定义输入）',
+    report_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间（自动填充当前时间）',
+    handle_status TINYINT(1) DEFAULT 0 COMMENT '处理状态：0 = 未处理，1 = 已核实（下架活动），2 = 已驳回（举报不成立）',
+    handle_time DATETIME COMMENT '处理时间（处理时自动填充）',
+    FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
+    FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动举报表';
