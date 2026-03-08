@@ -156,4 +156,55 @@ public class AuthServiceImpl implements AuthService {
         }
         bindStudent(user.getId(), studentId);
     }
+
+    @Override
+    public WechatLoginResponse adminLogin(String username, String password) {
+        log.info("处理管理员登录: {}", username);
+
+        try {
+            // 验证管理员账号密码（这里使用固定的管理员账号密码，实际项目中应该从数据库或配置文件读取）
+            if (!"admin".equals(username) || !"admin123".equals(password)) {
+                throw new RuntimeException("用户名或密码错误");
+            }
+
+            // 查找管理员用户（如果不存在则创建）
+            User adminUser = userMapper.selectByOpenid("admin_openid");
+            WechatLoginResponse response = new WechatLoginResponse();
+
+            if (adminUser != null) {
+                // 检查是否为管理员角色
+                if (!"admin".equals(adminUser.getRole())) {
+                    throw new RuntimeException("该用户不是管理员");
+                }
+                String token = jwtUtil.generateToken(adminUser.getId(), adminUser.getOpenid(), adminUser.getRole());
+                response.setToken(token);
+                response.setRegistered(adminUser.getStudentId() != null);
+                response.setStudentId(adminUser.getStudentId());
+                response.setUserId(adminUser.getId());
+                log.info("管理员登录成功，userId: {}", adminUser.getId());
+            } else {
+                // 创建管理员用户
+                User newAdmin = new User();
+                newAdmin.setOpenid("admin_openid");
+                newAdmin.setNickname("管理员");
+                newAdmin.setAvatar("https://jinejie-java-ai.oss-cn-beijing.aliyuncs.com/001.jpg");
+                newAdmin.setCreditScore(100);
+                newAdmin.setHighCredit(0);
+                newAdmin.setRole("admin"); // 设置为管理员角色
+                userMapper.insert(newAdmin);
+
+                String token = jwtUtil.generateToken(newAdmin.getId(), newAdmin.getOpenid(), newAdmin.getRole());
+                response.setToken(token);
+                response.setRegistered(false);
+                response.setUserId(newAdmin.getId());
+                log.info("管理员用户创建成功，userId: {}", newAdmin.getId());
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            log.error("管理员登录处理失败: {}", e.getMessage());
+            throw new RuntimeException("登录处理失败: " + e.getMessage());
+        }
+    }
 }

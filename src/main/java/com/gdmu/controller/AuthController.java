@@ -64,4 +64,24 @@ public class AuthController {
         data.put("timestamp", System.currentTimeMillis());
         return Result.success(data);
     }
+
+    @Operation(summary = "管理员登录", description = "管理员专用登录接口，使用用户名密码登录")
+    @PostMapping("/admin/login")
+    public Result adminLogin(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            String password = request.get("password");
+            
+            if (username == null || password == null) {
+                return Result.error("用户名和密码不能为空");
+            }
+            
+            WechatLoginResponse result = authService.adminLogin(username, password);
+            Map<String, Object> data = new HashMap<>();
+            data.put("TOKEN", result.getToken());
+            return Result.success(data);
+        } catch (Exception e) {
+            return Result.error("登录失败: " + e.getMessage());
+        }
+    }
 }
