@@ -112,4 +112,23 @@ public class RedisChatUtil {
         }
         return result;
     }
+
+    // ===== 系统通知相关 =====
+
+    @Autowired
+    private org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer;
+
+    // 发布系统通知
+    public void publishNotification(Long userId, Object notification) {
+        try {
+            // 使用Redis的发布/订阅功能发布通知
+            // 频道格式：notification:{userId}
+            String channel = "notification:" + userId;
+            // 将notification对象序列化为JSON字符串
+            byte[] messageBytes = jackson2JsonRedisSerializer.serialize(notification);
+            stringRedisTemplate.convertAndSend(channel, new String(messageBytes));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -138,3 +138,17 @@ CREATE TABLE IF NOT EXISTS activity_report (
     FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
     FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动举报表';
+
+-- 系统通知表
+CREATE TABLE IF NOT EXISTS system_notification (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '自增主键（唯一标识一条系统通知）',
+    user_id BIGINT NOT NULL COMMENT '外键，关联 users.id（通知接收用户）',
+    activity_id BIGINT COMMENT '外键，关联 activity.id（相关活动ID，可为空）',
+    notification_type TINYINT NOT NULL COMMENT '通知类型：1活动创建，2活动结束，3活动取消，4新成员加入，5活动即将开始',
+    title VARCHAR(100) NOT NULL COMMENT '通知标题',
+    content TEXT NOT NULL COMMENT '通知内容',
+    is_read TINYINT(1) DEFAULT 0 COMMENT '是否已读：0未读，1已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统通知表';

@@ -36,6 +36,9 @@ public class ActivityServiceImpl implements ActivityService {
     @Autowired
     private ActivityReportMapper activityReportMapper;
 
+    @Autowired
+    private SystemNotificationService systemNotificationService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Activity createActivity(Long creatorId, Integer type, String title, String description, String location, String campus, Double longitude, Double latitude, java.util.Date eventTime, Integer maxPeople) {
@@ -93,6 +96,9 @@ public class ActivityServiceImpl implements ActivityService {
                 log.warn("创建聊天群失败，不影响活动创建: {}", e.getMessage());
             }
 
+            // 发送活动创建通知
+            systemNotificationService.sendActivityCreateNotification(activity.getId(), creatorId, activity.getTitle());
+            
             log.info("活动创建成功，eventId: {}，创建者已自动加入", activity.getId());
             return activity;
 
@@ -268,6 +274,12 @@ public class ActivityServiceImpl implements ActivityService {
                 log.warn("加入聊天群失败，不影响活动加入: {}", e.getMessage());
             }
 
+            // 发送新成员加入通知
+            User newMember = userMapper.selectById(userId);
+            if (newMember != null) {
+                systemNotificationService.sendNewMemberJoinNotification(activityId, activity.getTitle(), userId, newMember.getNickname());
+            }
+
             log.info("用户加入活动成功，activityId: {}, userId: {}", activityId, userId);
 
         } catch (Exception e) {
@@ -296,6 +308,13 @@ public class ActivityServiceImpl implements ActivityService {
             int rows = activityMapper.updateStatus(activityId, status);
             if (rows <= 0) {
                 throw new RuntimeException("更新活动状态失败");
+            }
+
+            // 发送活动状态变更通知
+            if (status == 3) { // 已结束
+                systemNotificationService.sendActivityEndNotification(activityId, activity.getTitle());
+            } else if (status == 4) { // 已取消
+                systemNotificationService.sendActivityCancelNotification(activityId, activity.getTitle());
             }
 
             log.info("活动状态更新成功，activityId: {}, status: {}", activityId, status);
