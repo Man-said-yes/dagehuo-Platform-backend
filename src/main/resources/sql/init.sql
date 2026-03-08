@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
     gender TINYINT DEFAULT 0 COMMENT '性别：0未知，1男，2女',
     phone VARCHAR(20) COMMENT '手机号',
     credit_score INT DEFAULT 100 COMMENT '信誉分：默认100分',
+    role VARCHAR(20) DEFAULT 'user' COMMENT '角色：user-普通用户，admin-管理员',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户信息表';

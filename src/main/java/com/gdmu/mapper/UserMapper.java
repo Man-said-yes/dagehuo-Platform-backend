@@ -19,7 +19,7 @@ public interface UserMapper {
     int existsByStudentId(String studentId);
     
     // 创建用户
-    @Insert("INSERT INTO users(openid, nickname, credit_score, create_time, update_time) VALUES(#{openid}, #{nickname}, #{creditScore}, NOW(), NOW())")
+    @Insert("INSERT INTO users(openid, nickname, credit_score, role, create_time, update_time) VALUES(#{openid}, #{nickname}, #{creditScore}, 'user', NOW(), NOW())")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
     
