@@ -126,6 +126,9 @@ public class UserController {
             if (phone == null || phone.trim().isEmpty()) {
                 return Result.error("手机号不能为空");
             }
+            if (!phone.matches("^1[3-9]\\d{9}$")) {
+                return Result.error("手机号格式不正确");
+            }
             userService.updatePhone(userId, phone);
             return Result.success("手机号更新成功");
         } catch (Exception e) {
