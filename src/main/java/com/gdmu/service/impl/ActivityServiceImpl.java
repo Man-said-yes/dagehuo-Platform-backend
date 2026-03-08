@@ -1,12 +1,15 @@
 package com.gdmu.service.impl;
 
 import com.gdmu.mapper.ActivityMapper;
+import com.gdmu.mapper.ActivityReportMapper;
 import com.gdmu.mapper.ParticipantMapper;
 import com.gdmu.mapper.UserMapper;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Participant;
 import com.gdmu.service.ActivityService;
 import com.gdmu.service.ChatService;
+import com.gdmu.service.SystemNotificationService;
+import com.gdmu.pojo.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

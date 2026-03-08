@@ -1,7 +1,7 @@
 package com.gdmu.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +14,8 @@ import java.util.Set;
 public class RedisChatUtil {
     @Autowired
     public StringRedisTemplate stringRedisTemplate;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // ===== 未读消息数相关 =====
 
@@ -115,9 +117,6 @@ public class RedisChatUtil {
 
     // ===== 系统通知相关 =====
 
-    @Autowired
-    private org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer<Object> jackson2JsonRedisSerializer;
-
     // 发布系统通知
     public void publishNotification(Long userId, Object notification) {
         try {
@@ -125,8 +124,8 @@ public class RedisChatUtil {
             // 频道格式：notification:{userId}
             String channel = "notification:" + userId;
             // 将notification对象序列化为JSON字符串
-            byte[] messageBytes = jackson2JsonRedisSerializer.serialize(notification);
-            stringRedisTemplate.convertAndSend(channel, new String(messageBytes));
+            String message = objectMapper.writeValueAsString(notification);
+            stringRedisTemplate.convertAndSend(channel, message);
         } catch (Exception e) {
             e.printStackTrace();
         }
