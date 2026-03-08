@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     avatar VARCHAR(255) COMMENT '头像URL',
     gender TINYINT DEFAULT 0 COMMENT '性别：0未知，1男，2女',
     phone VARCHAR(20) COMMENT '手机号',
+    password VARCHAR(100) COMMENT '密码（管理员登录用）',
     credit_score INT DEFAULT 100 COMMENT '信誉分：默认100分',
     high_credit TINYINT DEFAULT 0 COMMENT '高信誉分标识：0否，1是',
     role VARCHAR(20) DEFAULT 'user' COMMENT '角色：user普通用户，admin管理员',

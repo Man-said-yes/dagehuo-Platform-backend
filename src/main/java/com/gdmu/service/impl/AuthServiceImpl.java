@@ -71,6 +71,7 @@ public class AuthServiceImpl implements AuthService {
                 newUser.setCreditScore(100); // 设置默认信誉分
                 newUser.setHighCredit(0); // 设置默认高信誉分标识为0
                 newUser.setRole("user"); // 设置默认角色为普通用户
+                newUser.setPassword(null); // 普通用户密码为null
                 userMapper.insert(newUser);
 
                 String token = jwtUtil.generateToken(newUser.getId(), openid, newUser.getRole());
@@ -162,11 +163,6 @@ public class AuthServiceImpl implements AuthService {
         log.info("处理管理员登录: {}", username);
 
         try {
-            // 验证管理员账号密码（这里使用固定的管理员账号密码，实际项目中应该从数据库或配置文件读取）
-            if (!"admin".equals(username) || !"admin123".equals(password)) {
-                throw new RuntimeException("用户名或密码错误");
-            }
-
             // 查找管理员用户（如果不存在则创建）
             User adminUser = userMapper.selectByOpenid("admin_openid");
             WechatLoginResponse response = new WechatLoginResponse();
@@ -175,6 +171,10 @@ public class AuthServiceImpl implements AuthService {
                 // 检查是否为管理员角色
                 if (!"admin".equals(adminUser.getRole())) {
                     throw new RuntimeException("该用户不是管理员");
+                }
+                // 验证密码
+                if (!"admin123".equals(password)) {
+                    throw new RuntimeException("用户名或密码错误");
                 }
                 String token = jwtUtil.generateToken(adminUser.getId(), adminUser.getOpenid(), adminUser.getRole());
                 response.setToken(token);
@@ -191,6 +191,7 @@ public class AuthServiceImpl implements AuthService {
                 newAdmin.setCreditScore(100);
                 newAdmin.setHighCredit(0);
                 newAdmin.setRole("admin"); // 设置为管理员角色
+                newAdmin.setPassword("admin123"); // 设置默认密码
                 userMapper.insert(newAdmin);
 
                 String token = jwtUtil.generateToken(newAdmin.getId(), newAdmin.getOpenid(), newAdmin.getRole());

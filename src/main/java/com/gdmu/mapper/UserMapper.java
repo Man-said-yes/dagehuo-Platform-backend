@@ -19,12 +19,12 @@ public interface UserMapper {
     int existsByStudentId(String studentId);
     
     // 创建用户
-    @Insert("INSERT INTO users(openid, nickname, avatar, credit_score, high_credit, role) VALUES(#{openid}, #{nickname}, #{avatar}, #{creditScore}, #{highCredit}, #{role})")
+    @Insert("INSERT INTO users(openid, nickname, avatar, gender, phone, password, credit_score, high_credit, role) VALUES(#{openid}, #{nickname}, #{avatar}, #{gender}, #{phone}, #{password}, #{creditScore}, #{highCredit}, #{role})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
     
     // 更新用户信息
-    @Update("UPDATE users SET student_id = #{studentId}, nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone}, credit_score = #{creditScore}, high_credit = #{highCredit}, role = #{role} WHERE id = #{id}")
+    @Update("UPDATE users SET student_id = #{studentId}, nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone}, password = #{password}, credit_score = #{creditScore}, high_credit = #{highCredit}, role = #{role} WHERE id = #{id}")
     int update(User user);
     
     // 更新用户信誉分
