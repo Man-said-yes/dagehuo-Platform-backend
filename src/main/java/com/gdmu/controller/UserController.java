@@ -251,4 +251,26 @@ public class UserController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "查询所有用户列表", description = "查询所有用户的详细信息，仅管理员可访问")
+    @GetMapping("/list")
+    public Result getAllUsers(
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            // 获取当前用户ID和角色
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            User currentUser = userService.getUserById(userId);
+            
+            // 验证是否为管理员
+            if (!"admin".equals(currentUser.getRole())) {
+                return Result.error("权限不足，仅管理员可访问");
+            }
+            
+            // 获取所有用户列表
+            java.util.List<User> users = userService.getAllUsers();
+            return Result.success(users);
+        } catch (Exception e) {
+            return Result.error("获取用户列表失败: " + e.getMessage());
+        }
+    }
 }

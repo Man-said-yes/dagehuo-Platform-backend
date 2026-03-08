@@ -290,4 +290,16 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("查询信誉分历史记录失败: " + e.getMessage());
         }
     }
+
+    @Override
+    public java.util.List<User> getAllUsers() {
+        log.info("查询所有用户列表");
+        
+        try {
+            return userMapper.selectAll();
+        } catch (Exception e) {
+            log.error("查询所有用户列表失败: {}", e.getMessage());
+            throw new RuntimeException("查询用户列表失败: " + e.getMessage());
+        }
+    }
 }

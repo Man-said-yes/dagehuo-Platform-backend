@@ -14,6 +14,7 @@ public class User {
     private String phone;       // 手机号
     private Integer creditScore; // 信誉分
     private Integer highCredit; // 高信誉分标识：0否，1是
+    private String role; // 角色：user普通用户，admin管理员
     private Date createTime;
     private Date updateTime;
 }

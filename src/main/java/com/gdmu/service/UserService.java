@@ -33,4 +33,9 @@ public interface UserService {
      * 查询用户的信誉分历史记录
      */
     java.util.List<com.gdmu.pojo.UserCreditRecord> getCreditRecordHistory(Long userId);
+    
+    /**
+     * 获取所有用户列表
+     */
+    java.util.List<User> getAllUsers();
 }

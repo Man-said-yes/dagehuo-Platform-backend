@@ -19,12 +19,12 @@ public interface UserMapper {
     int existsByStudentId(String studentId);
     
     // 创建用户
-    @Insert("INSERT INTO users(openid, nickname, credit_score, high_credit) VALUES(#{openid}, #{nickname}, #{creditScore}, #{highCredit})")
+    @Insert("INSERT INTO users(openid, nickname, avatar, credit_score, high_credit, role) VALUES(#{openid}, #{nickname}, #{avatar}, #{creditScore}, #{highCredit}, #{role})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
     
     // 更新用户信息
-    @Update("UPDATE users SET student_id = #{studentId}, nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone}, credit_score = #{creditScore}, high_credit = #{highCredit} WHERE id = #{id}")
+    @Update("UPDATE users SET student_id = #{studentId}, nickname = #{nickname}, avatar = #{avatar}, gender = #{gender}, phone = #{phone}, credit_score = #{creditScore}, high_credit = #{highCredit}, role = #{role} WHERE id = #{id}")
     int update(User user);
     
     // 更新用户信誉分
@@ -34,4 +34,8 @@ public interface UserMapper {
     // 根据学号查询用户
     @Select("SELECT * FROM users WHERE student_id = #{studentId}")
     User selectByStudentId(String studentId);
+    
+    // 查询所有用户
+    @Select("SELECT * FROM users")
+    java.util.List<User> selectAll();
 }

@@ -56,12 +56,12 @@ public class AuthServiceImpl implements AuthService {
             WechatLoginResponse response = new WechatLoginResponse();
 
             if (user != null) {
-                String token = jwtUtil.generateToken(user.getId(), openid);
+                String token = jwtUtil.generateToken(user.getId(), openid, user.getRole());
                 response.setToken(token);
                 response.setRegistered(user.getStudentId() != null);
                 response.setStudentId(user.getStudentId());
                 response.setUserId(user.getId());
-                log.info("老用户登录成功，userId: {}", user.getId());
+                log.info("老用户登录成功，userId: {}, role: {}", user.getId(), user.getRole());
             } else {
                 User newUser = new User();
                 newUser.setOpenid(openid);
@@ -70,13 +70,14 @@ public class AuthServiceImpl implements AuthService {
                 newUser.setAvatar("https://jinejie-java-ai.oss-cn-beijing.aliyuncs.com/001.jpg"); // 设置默认头像
                 newUser.setCreditScore(100); // 设置默认信誉分
                 newUser.setHighCredit(0); // 设置默认高信誉分标识为0
+                newUser.setRole("user"); // 设置默认角色为普通用户
                 userMapper.insert(newUser);
 
-                String token = jwtUtil.generateToken(newUser.getId(), openid);
+                String token = jwtUtil.generateToken(newUser.getId(), openid, newUser.getRole());
                 response.setToken(token);
                 response.setRegistered(false);
                 response.setUserId(newUser.getId());
-                log.info("新用户注册成功，userId: {}", newUser.getId());
+                log.info("新用户注册成功，userId: {}, role: {}", newUser.getId(), newUser.getRole());
             }
 
             return response;
