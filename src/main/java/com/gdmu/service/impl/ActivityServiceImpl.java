@@ -650,4 +650,32 @@ public class ActivityServiceImpl implements ActivityService {
             throw new RuntimeException("核实举报失败: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void rejectReport(Long reportId) {
+        log.info("驳回举报，reportId: {}", reportId);
+
+        try {
+            // 获取举报记录
+            com.gdmu.pojo.ActivityReport report = activityReportMapper.selectById(reportId);
+            if (report == null) {
+                throw new RuntimeException("举报记录不存在");
+            }
+
+            // 验证举报是否已处理
+            if (report.getHandleStatus() != 0) {
+                throw new RuntimeException("该举报已处理");
+            }
+
+            // 将举报标记为已驳回（处理状态设置为2）
+            activityReportMapper.updateHandleStatus(reportId, 2);
+
+            log.info("举报驳回成功，reportId: {}", reportId);
+
+        } catch (Exception e) {
+            log.error("驳回举报失败: {}", e.getMessage());
+            throw new RuntimeException("驳回举报失败: " + e.getMessage());
+        }
+    }
 }

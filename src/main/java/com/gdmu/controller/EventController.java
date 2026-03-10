@@ -512,4 +512,21 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "驳回举报", description = "将举报标记为已驳回")
+    @PostMapping("/report/{reportId}/reject")
+    public Result rejectReport(
+            @PathVariable Long reportId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            // 验证用户权限（这里可以添加管理员权限验证）
+            
+            // 驳回举报
+            activityService.rejectReport(reportId);
+            return Result.success("举报驳回成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

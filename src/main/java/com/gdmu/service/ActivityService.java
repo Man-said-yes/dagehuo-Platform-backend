@@ -119,4 +119,9 @@ public interface ActivityService {
      * 核实举报并结束活动，通知所有参与用户
      */
     void verifyReport(Long reportId);
+    
+    /**
+     * 驳回举报
+     */
+    void rejectReport(Long reportId);
 }
