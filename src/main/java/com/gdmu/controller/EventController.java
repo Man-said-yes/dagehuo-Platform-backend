@@ -495,4 +495,21 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+
+    @Operation(summary = "核实举报", description = "将举报标记为已核实并结束活动，通知所有参与用户")
+    @PostMapping("/report/{reportId}/verify")
+    public Result verifyReport(
+            @PathVariable Long reportId,
+            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            // 验证用户权限（这里可以添加管理员权限验证）
+            
+            // 核实举报并结束活动
+            activityService.verifyReport(reportId);
+            return Result.success("举报核实成功，活动已结束");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

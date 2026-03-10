@@ -114,4 +114,9 @@ public interface ActivityService {
      * 根据处理状态获取被举报活动总数
      */
     int getReportedActivityCountByStatus(Integer handleStatus);
+    
+    /**
+     * 核实举报并结束活动，通知所有参与用户
+     */
+    void verifyReport(Long reportId);
 }

@@ -601,4 +601,53 @@ public class ActivityServiceImpl implements ActivityService {
             throw new RuntimeException("获取被举报活动总数失败: " + e.getMessage());
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void verifyReport(Long reportId) {
+        log.info("核实举报，reportId: {}", reportId);
+
+        try {
+            // 获取举报记录
+            com.gdmu.pojo.ActivityReport report = activityReportMapper.selectById(reportId);
+            if (report == null) {
+                throw new RuntimeException("举报记录不存在");
+            }
+
+            // 验证举报是否已处理
+            if (report.getHandleStatus() != 0) {
+                throw new RuntimeException("该举报已处理");
+            }
+
+            // 获取关联的活动
+            Long activityId = report.getActivityId();
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                throw new RuntimeException("活动不存在");
+            }
+
+            // 将举报标记为已核实（处理状态设置为1）
+            activityReportMapper.updateHandleStatus(reportId, 1);
+
+            // 结束活动（状态设置为3-已结束）
+            activityMapper.updateStatus(activityId, 3);
+
+            // 获取所有活动参与者
+            List<Participant> participants = participantMapper.selectByActivityId(activityId);
+            if (!participants.isEmpty()) {
+                // 向所有参与者发送系统通知
+                String activityTitle = activity.getTitle();
+                for (Participant participant : participants) {
+                    Long userId = participant.getUserId();
+                    systemNotificationService.sendActivityEndNotification(activityId, activityTitle);
+                }
+            }
+
+            log.info("举报核实成功，活动已结束，reportId: {}, activityId: {}", reportId, activityId);
+
+        } catch (Exception e) {
+            log.error("核实举报失败: {}", e.getMessage());
+            throw new RuntimeException("核实举报失败: " + e.getMessage());
+        }
+    }
 }

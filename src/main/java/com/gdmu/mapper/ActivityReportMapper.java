@@ -47,4 +47,8 @@ public interface ActivityReportMapper {
     // 根据处理状态查询举报记录总数
     @Select("SELECT COUNT(*) FROM activity_report WHERE handle_status = #{handleStatus}")
     int countReportsByHandleStatus(@Param("handleStatus") Integer handleStatus);
+    
+    // 根据ID查询举报记录
+    @Select("SELECT * FROM activity_report WHERE id = #{id}")
+    ActivityReport selectById(@Param("id") Long id);
 }
