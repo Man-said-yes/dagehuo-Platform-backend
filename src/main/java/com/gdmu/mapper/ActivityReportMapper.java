@@ -51,4 +51,8 @@ public interface ActivityReportMapper {
     // 根据ID查询举报记录
     @Select("SELECT * FROM activity_report WHERE id = #{id}")
     ActivityReport selectById(@Param("id") Long id);
+    
+    // 根据活动ID更新所有举报记录的处理状态
+    @Update("UPDATE activity_report SET handle_status = #{handleStatus}, handle_time = CURRENT_TIMESTAMP WHERE activity_id = #{activityId}")
+    int updateHandleStatusByActivityId(@Param("activityId") Long activityId, @Param("handleStatus") Integer handleStatus);
 }

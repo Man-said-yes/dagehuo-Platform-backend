@@ -626,8 +626,8 @@ public class ActivityServiceImpl implements ActivityService {
                 throw new RuntimeException("活动不存在");
             }
 
-            // 将举报标记为已核实（处理状态设置为1）
-            activityReportMapper.updateHandleStatus(reportId, 1);
+            // 将该活动的所有举报标记为已核实（处理状态设置为1）
+            activityReportMapper.updateHandleStatusByActivityId(activityId, 1);
 
             // 结束活动（状态设置为3-已结束）
             activityMapper.updateStatus(activityId, 3);
@@ -668,10 +668,17 @@ public class ActivityServiceImpl implements ActivityService {
                 throw new RuntimeException("该举报已处理");
             }
 
-            // 将举报标记为已驳回（处理状态设置为2）
-            activityReportMapper.updateHandleStatus(reportId, 2);
+            // 获取关联的活动
+            Long activityId = report.getActivityId();
+            Activity activity = activityMapper.selectById(activityId);
+            if (activity == null) {
+                throw new RuntimeException("活动不存在");
+            }
 
-            log.info("举报驳回成功，reportId: {}", reportId);
+            // 将该活动的所有举报标记为已驳回（处理状态设置为2）
+            activityReportMapper.updateHandleStatusByActivityId(activityId, 2);
+
+            log.info("举报驳回成功，reportId: {}, activityId: {}", reportId, activityId);
 
         } catch (Exception e) {
             log.error("驳回举报失败: {}", e.getMessage());
