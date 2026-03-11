@@ -14,7 +14,9 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class AIService {
     private final RestTemplate restTemplate = new RestTemplate();
@@ -80,27 +82,50 @@ public class AIService {
             );
             
             // 解析响应
-            JSONObject responseBody = new JSONObject(responseEntity.getBody());
-            JSONArray choices = responseBody.getJSONObject("result").getJSONArray("choices");
+            String responseBodyStr = responseEntity.getBody();
+            log.info("AI API响应内容: {}", responseBodyStr);
             
-            // 提取推荐的活动
             List<Activity> recommendedActivities = new ArrayList<>();
-            for (int i = 0; i < choices.length(); i++) {
-                JSONObject choice = choices.getJSONObject(i);
-                JSONObject message = choice.getJSONObject("message");
-                String content = message.getString("content");
-                // 这里需要根据AI返回的格式解析活动列表
-                // 假设AI返回的是JSON格式的活动列表
-                JSONArray activityArray = new JSONArray(content);
-                for (int j = 0; j < activityArray.length(); j++) {
-                    JSONObject activityObj = activityArray.getJSONObject(j);
-                    Activity activity = new Activity();
-                    activity.setId(activityObj.getLong("id"));
-                    activity.setTitle(activityObj.getString("title"));
-                    activity.setDescription(activityObj.getString("description"));
-                    // 其他字段的解析...
-                    recommendedActivities.add(activity);
+            try {
+                JSONObject responseBody = new JSONObject(responseBodyStr);
+                JSONArray choices = responseBody.getJSONObject("result").getJSONArray("choices");
+                
+                // 提取推荐的活动
+                for (int i = 0; i < choices.length(); i++) {
+                    JSONObject choice = choices.getJSONObject(i);
+                    JSONObject message = choice.getJSONObject("message");
+                    String content = message.getString("content");
+                    log.info("AI推荐内容: {}", content);
+                    
+                    // 尝试解析活动列表
+                    try {
+                        // 假设AI返回的是JSON格式的活动列表
+                        JSONArray activityArray = new JSONArray(content);
+                        for (int j = 0; j < activityArray.length(); j++) {
+                            JSONObject activityObj = activityArray.getJSONObject(j);
+                            Activity activity = new Activity();
+                            activity.setId(activityObj.getLong("id"));
+                            activity.setTitle(activityObj.getString("title"));
+                            activity.setDescription(activityObj.getString("description"));
+                            // 其他字段的解析...
+                            recommendedActivities.add(activity);
+                        }
+                    } catch (Exception e) {
+                        log.error("解析AI推荐内容失败: {}", e.getMessage());
+                        // 如果解析失败，返回所有活动
+                        recommendedActivities = activities;
+                        break;
+                    }
                 }
+            } catch (Exception e) {
+                log.error("解析AI API响应失败: {}", e.getMessage());
+                // 如果API响应解析失败，返回所有活动
+                recommendedActivities = activities;
+            }
+            
+            // 如果没有推荐活动，返回所有活动
+            if (recommendedActivities.isEmpty()) {
+                recommendedActivities = activities;
             }
             
             AIResponse aiResponse = new AIResponse();
