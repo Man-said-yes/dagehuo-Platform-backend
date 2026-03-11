@@ -34,7 +34,7 @@ public class AIService {
         try {
             // 构建请求参数
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", "deepseek-v3.1-chat"); // 使用正确的模型ID
+            requestBody.put("model", "xop3qwen1b7"); // 使用正确的模型ID
             
             JSONArray messages = new JSONArray();
             
@@ -55,15 +55,16 @@ public class AIService {
                     "- status: 活动状态（1招募中，2进行中，3已结束，4已取消）\n" +
                     "- type: 活动类型（0其他，1运动，2约饭，3学习，4游戏，5出行）\n" +
                     "- highCredit: 高信用标识（0否，1是）\n" +
-                    "请根据用户的查询内容、位置信息和活动的相关属性，返回最匹配的活动列表。" +
-                    "请严格按照以下JSON格式返回结果：\n" +
-                    "[\n" +
-                    "  {\n" +
-                    "    \"id\": 1,\n" +
-                    "    \"title\": \"活动标题\",\n" +
-                    "    \"description\": \"活动描述\"\n" +
-                    "  }\n" +
-                    "]");
+                    "请根据用户的查询内容、位置信息和活动的相关属性，返回最匹配的活动列表。\n" +
+                    "请直接返回活动列表，每个活动包含id、title和description字段，格式如下：\n" +
+                    "活动ID: 1\n" +
+                    "活动标题: 想打羽毛球缺1人\n" +
+                    "活动描述: 希望找到羽毛球爱好者一起打球，水平不限，开心就好！\n" +
+                    "\n" +
+                    "活动ID: 2\n" +
+                    "活动标题: 周末一起去爬山\n" +
+                    "活动描述: 周末一起去爬山，欣赏自然风光\n");
+
             messages.put(systemMsg);
             
             // 用户消息，包含查询和位置
@@ -73,9 +74,10 @@ public class AIService {
             messages.put(userMsg);
             
             requestBody.put("messages", messages);
+            requestBody.put("stream", false);
             requestBody.put("temperature", 0.7);
-            requestBody.put("max_tokens", 2048);
-            requestBody.put("response_format", new JSONObject().put("type", "json_object"));
+            requestBody.put("max_tokens", 4096);
+            requestBody.put("stream_options", new JSONObject().put("include_usage", true));
             
             // 设置请求头
             HttpHeaders headers = new HttpHeaders();
@@ -109,16 +111,42 @@ public class AIService {
                     
                     // 尝试解析活动列表
                     try {
-                        // 假设AI返回的是JSON格式的活动列表
-                        JSONArray activityArray = new JSONArray(content);
-                        for (int j = 0; j < activityArray.length(); j++) {
-                            JSONObject activityObj = activityArray.getJSONObject(j);
-                            Activity activity = new Activity();
-                            activity.setId(activityObj.getLong("id"));
-                            activity.setTitle(activityObj.getString("title"));
-                            activity.setDescription(activityObj.getString("description"));
-                            // 其他字段的解析...
-                            recommendedActivities.add(activity);
+                        // 解析文本格式的活动列表
+                        String[] activityBlocks = content.split("\n\n");
+                        for (String block : activityBlocks) {
+                            if (block.trim().isEmpty()) continue;
+                            
+                            // 提取活动ID、标题和描述
+                            String[] lines = block.split("\n");
+                            Long id = null;
+                            String title = "";
+                            String description = "";
+                            
+                            for (String line : lines) {
+                                line = line.trim();
+                                if (line.startsWith("活动ID:")) {
+                                    try {
+                                        id = Long.parseLong(line.substring(5).trim());
+                                    } catch (Exception e) {
+                                        // 忽略解析错误
+                                    }
+                                } else if (line.startsWith("活动标题:")) {
+                                    title = line.substring(5).trim();
+                                } else if (line.startsWith("活动描述:")) {
+                                    description = line.substring(5).trim();
+                                }
+                            }
+                            
+                            // 如果成功提取了ID，添加到推荐列表
+                            if (id != null) {
+                                // 查找对应的活动
+                                for (Activity activity : activities) {
+                                    if (activity.getId().equals(id)) {
+                                        recommendedActivities.add(activity);
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     } catch (Exception e) {
                         log.error("解析AI推荐内容失败: {}", e.getMessage());
