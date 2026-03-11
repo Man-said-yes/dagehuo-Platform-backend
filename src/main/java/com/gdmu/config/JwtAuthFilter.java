@@ -24,7 +24,7 @@ public class JwtAuthFilter implements Filter {
         
         log.info("JWT过滤器开始处理请求，uri: {}", request.getRequestURI());
         
-        // 跳过登录、测试接口、Swagger相关路径、H2控制台、WebSocket和其他静态资源的认证
+        // 跳过登录、测试接口、Swagger相关路径、H2控制台、WebSocket、AI智能查询接口和其他静态资源的认证
         String requestUri = request.getRequestURI();
         if (requestUri.equals("/api/auth/login") || 
             requestUri.equals("/api/auth/admin/login") ||
@@ -34,6 +34,7 @@ public class JwtAuthFilter implements Filter {
             requestUri.startsWith("/v3/api-docs") ||
             requestUri.startsWith("/h2-console") ||
             requestUri.startsWith("/ws/") ||
+            requestUri.startsWith("/api/event/ai/") ||
             requestUri.equals("/favicon.ico") ||
             requestUri.equals("/hybridaction/zybTrackerStatisticsAction")) {
             log.info("跳过认证，uri: {}", requestUri);

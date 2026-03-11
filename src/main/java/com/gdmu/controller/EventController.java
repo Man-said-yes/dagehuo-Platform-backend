@@ -4,7 +4,10 @@ import com.gdmu.pojo.CreateEventRequest;
 import com.gdmu.pojo.DistanceQueryRequest;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Result;
+import com.gdmu.pojo.AISearchRequest;
+import com.gdmu.pojo.AIResponse;
 import com.gdmu.service.ActivityService;
+import com.gdmu.service.AIService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +25,9 @@ public class EventController {
 
     @Autowired
     private ActivityService activityService;
+    
+    @Autowired
+    private AIService aiService;
 
     @Operation(summary = "发布活动", description = "创建新的搭伙活动")
     @PostMapping
@@ -525,6 +531,35 @@ public class EventController {
             // 驳回举报
             activityService.rejectReport(reportId);
             return Result.success("举报驳回成功");
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    @Operation(summary = "AI智能查询活动", description = "根据用户查询语句和位置信息，使用AI推荐最匹配的活动")
+    @PostMapping("/ai/search")
+    public Result aiSearchEvent(@RequestBody AISearchRequest request) {
+        try {
+            // 验证参数
+            if (request.getQuery() == null || request.getQuery().trim().isEmpty()) {
+                return Result.error("查询语句不能为空");
+            }
+            if (request.getLongitude() == null || request.getLatitude() == null) {
+                return Result.error("经纬度不能为空");
+            }
+            
+            // 获取所有活动列表
+            List<Activity> activities = activityService.getAllActivities(1, 100, "create_time", "desc");
+            
+            // 调用AI服务获取推荐活动
+            AIResponse aiResponse = aiService.getRecommendedActivities(
+                    request.getQuery(),
+                    request.getLongitude(),
+                    request.getLatitude(),
+                    activities
+            );
+            
+            return Result.success(aiResponse);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
