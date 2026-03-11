@@ -42,19 +42,15 @@ public class AIService {
             JSONObject systemMsg = new JSONObject();
             systemMsg.put("role", "system");
             systemMsg.put("content", "你是一个专业的活动推荐助手，需要根据用户的查询和位置，从提供的活动列表中推荐最匹配的活动。活动列表字段说明：\n" +
-                    "- id: 活动ID\n" +
-                    "- title: 活动标题\n" +
-                    "- description: 活动描述\n" +
-                    "- eventTime: 活动时间\n" +
-                    "- location: 活动地点\n" +
-                    "- campus: 校区\n" +
-                    "- longitude: 经度\n" +
-                    "- latitude: 纬度\n" +
-                    "- maxPeople: 最大参与人数\n" +
-                    "- currentPeople: 当前参与人数\n" +
-                    "- status: 活动状态（1招募中，2进行中，3已结束，4已取消）\n" +
-                    "- type: 活动类型（0其他，1运动，2约饭，3学习，4游戏，5出行）\n" +
-                    "- highCredit: 高信用标识（0否，1是）\n" +
+                    "- 活动ID: 活动的唯一标识\n" +
+                    "- 标题: 活动的标题\n" +
+                    "- 描述: 活动的详细描述\n" +
+                    "- 地点: 活动的具体地点\n" +
+                    "- 校区: 活动所在的校区\n" +
+                    "- 经度: 活动地点的经度\n" +
+                    "- 纬度: 活动地点的纬度\n" +
+                    "- 类型: 活动类型（0其他，1运动，2约饭，3学习，4游戏，5出行）\n" +
+                    "- 高信用: 高信用标识（0否，1是）\n" +
                     "\n" +
                     "详细推荐规则和评分标准：\n" +
                     "1. 相关性（权重：70%）：\n" +
@@ -66,12 +62,10 @@ public class AIService {
                     "   - 距离越近，得分越高\n" +
                     "   - 优先推荐距离在3公里以内的活动\n" +
                     "3. 活跃度（权重：15%）：\n" +
-                    "   - 活动状态：招募中(1) > 进行中(2)\n" +
-                    "   - 参与人数：当前参与人数越多，得分越高\n" +
-                    "   - 剩余名额：剩余名额适中的活动得分更高\n" +
+                    "   - 高信用活动优先推荐\n" +
+                    "   - 距离用户位置近的活动优先推荐\n" +
                     "\n" +
                     "推荐要求：\n" +
-                    "- 只推荐状态为1（招募中）的活动\n" +
                     "- 只推荐与用户查询高度相关的活动，不相关的活动不要推荐\n" +
                     "- 优先推荐距离用户当前位置较近的活动\n" +
                     "- 按照推荐分数从高到低排序\n" +
@@ -80,11 +74,10 @@ public class AIService {
                     "\n" +
                     "推荐步骤：\n" +
                     "1. 首先分析用户的查询内容，提取关键词和意图\n" +
-                    "2. 过滤出状态为1（招募中）的活动\n" +
-                    "3. 计算每个活动与用户查询的相关性得分\n" +
-                    "4. 只保留相关性得分高的活动（与用户查询真正相关的活动）\n" +
-                    "5. 按照推荐分数排序\n" +
-                    "6. 确保推荐的活动距离用户位置合理\n" +
+                    "2. 计算每个活动与用户查询的相关性得分\n" +
+                    "3. 只保留相关性得分高的活动（与用户查询真正相关的活动）\n" +
+                    "4. 按照推荐分数排序\n" +
+                    "5. 确保推荐的活动距离用户位置合理\n" +
                     "\n" +
                     "示例分析：\n" +
                     "用户查询：\"想打羽毛球\"\n" +
@@ -119,21 +112,41 @@ public class AIService {
                     "推荐结果：只推荐活动1，因为活动2与\"想打羽毛球\"无关，活动3状态不是招募中\n" +
                     "\n" +
                     "请根据用户的查询内容、位置信息和活动的相关属性，严格筛选并返回最匹配的活动列表。\n" +
-                    "请直接返回活动ID列表，每个ID占一行，格式如下：\n" +
-                    "1\n" +
-                    "2\n" +
-                    "3\n" +
+                    "请只返回活动ID列表，每个ID占一行，只包含数字，不要包含任何其他文字或格式，例如：\n" +
+                    "18\n" +
+                    "25\n" +
+                    "32\n" +
                     "\n" +
-                    "如果没有相关的活动，请返回空列表，不要返回任何内容。\n");
+                    "如果没有相关的活动，请返回空列表，不要返回任何内容。\n" +
+                    "重要：请确保每个ID占一行，不要在同一行返回多个ID，也不要添加任何描述性文字。\n");
 
 
 
             messages.put(systemMsg);
             
+            // 过滤出招募中的活动
+            List<Activity> recruitingActivities = activities.stream()
+                    .filter(activity -> activity.getStatus() == 1)
+                    .collect(java.util.stream.Collectors.toList());
+            
+            // 构建活动列表字符串，移除不需要的字段
+            StringBuilder activitiesStr = new StringBuilder();
+            for (Activity activity : recruitingActivities) {
+                activitiesStr.append("活动ID: " + activity.getId() + "\n");
+                activitiesStr.append("标题: " + activity.getTitle() + "\n");
+                activitiesStr.append("描述: " + activity.getDescription() + "\n");
+                activitiesStr.append("地点: " + activity.getLocation() + "\n");
+                activitiesStr.append("校区: " + activity.getCampus() + "\n");
+                activitiesStr.append("经度: " + activity.getLongitude() + "\n");
+                activitiesStr.append("纬度: " + activity.getLatitude() + "\n");
+                activitiesStr.append("类型: " + activity.getType() + "\n");
+                activitiesStr.append("高信用: " + activity.getHighCredit() + "\n\n");
+            }
+            
             // 用户消息，包含查询和位置
             JSONObject userMsg = new JSONObject();
             userMsg.put("role", "user");
-            userMsg.put("content", "用户查询：" + query + "\n用户位置：经度 " + longitude + "，纬度 " + latitude + "\n活动列表：" + activities.toString());
+            userMsg.put("content", "用户查询：" + query + "\n用户位置：经度 " + longitude + "，纬度 " + latitude + "\n活动列表：\n" + activitiesStr.toString());
             messages.put(userMsg);
             
             requestBody.put("messages", messages);
@@ -174,8 +187,10 @@ public class AIService {
                     
                     // 尝试解析活动ID列表
                     try {
-                        // 解析文本格式的活动ID列表
-                        String[] lines = content.split("\n");
+                        // 清理内容，只保留数字部分
+                        String cleanedContent = content.replaceAll("[^0-9\\n]", "");
+                        // 按行分割
+                        String[] lines = cleanedContent.split("\n");
                         for (String line : lines) {
                             line = line.trim();
                             if (line.isEmpty()) continue;
