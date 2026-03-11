@@ -216,20 +216,26 @@ public class AIService {
                         }
                     } catch (Exception e) {
                         log.error("解析AI推荐内容失败: {}", e.getMessage());
-                        // 如果解析失败，返回所有活动
-                        recommendedActivities = activities;
-                        break;
+                        // 如果解析失败，只返回招募中的活动
+                            recommendedActivities = activities.stream()
+                                    .filter(activity -> activity.getStatus() == 1)
+                                    .collect(java.util.stream.Collectors.toList());
+                            break;
                     }
                 }
             } catch (Exception e) {
                 log.error("解析AI API响应失败: {}", e.getMessage());
-                // 如果API响应解析失败，返回所有活动
-                recommendedActivities = activities;
+                // 如果API响应解析失败，只返回招募中的活动
+                recommendedActivities = activities.stream()
+                        .filter(activity -> activity.getStatus() == 1)
+                        .collect(java.util.stream.Collectors.toList());
             }
             
-            // 如果没有推荐活动，返回所有活动
+            // 如果没有推荐活动，只返回招募中的活动
             if (recommendedActivities.isEmpty()) {
-                recommendedActivities = activities;
+                recommendedActivities = activities.stream()
+                        .filter(activity -> activity.getStatus() == 1)
+                        .collect(java.util.stream.Collectors.toList());
             }
             
             AIResponse aiResponse = new AIResponse();
