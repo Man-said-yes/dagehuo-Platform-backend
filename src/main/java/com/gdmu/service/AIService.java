@@ -141,7 +141,7 @@ public class AIService {
             
             requestBody.put("messages", messages);
             requestBody.put("stream", false);
-            requestBody.put("temperature", 0.7);
+            requestBody.put("temperature", 0.1);
             requestBody.put("max_tokens", 4096);
             requestBody.put("stream_options", new JSONObject().put("include_usage", true));
             
@@ -216,33 +216,27 @@ public class AIService {
                         }
                     } catch (Exception e) {
                         log.error("解析AI推荐内容失败: {}", e.getMessage());
-                        // 如果解析失败，只返回招募中的活动
-                            recommendedActivities = activities.stream()
-                                    .filter(activity -> activity.getStatus() == 1)
-                                    .collect(java.util.stream.Collectors.toList());
+                        // 如果解析失败，返回空列表
+                            recommendedActivities = new ArrayList<>();
                             break;
                     }
                 }
             } catch (Exception e) {
                 log.error("解析AI API响应失败: {}", e.getMessage());
-                // 如果API响应解析失败，只返回招募中的活动
-                recommendedActivities = activities.stream()
-                        .filter(activity -> activity.getStatus() == 1)
-                        .collect(java.util.stream.Collectors.toList());
+                // 如果API响应解析失败，返回空列表
+                recommendedActivities = new ArrayList<>();
             }
             
-            // 如果没有推荐活动，只返回招募中的活动
+            // 如果没有推荐活动，返回空列表
             if (recommendedActivities.isEmpty()) {
-                recommendedActivities = activities.stream()
-                        .filter(activity -> activity.getStatus() == 1)
-                        .collect(java.util.stream.Collectors.toList());
+                recommendedActivities = new ArrayList<>();
             }
             
             AIResponse aiResponse = new AIResponse();
             aiResponse.setRecommendedActivities(recommendedActivities);
             return aiResponse;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("AI推荐服务异常: {}", e.getMessage());
             // 处理错误，返回空列表
             AIResponse aiResponse = new AIResponse();
             aiResponse.setRecommendedActivities(new ArrayList<>());
