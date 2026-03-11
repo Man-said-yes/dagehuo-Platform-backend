@@ -58,7 +58,7 @@ public class AIService {
                     "\n" +
                     "详细推荐规则和评分标准：\n" +
                     "1. 相关性（权重：70%）：\n" +
-                    "   - 活动标题与用户查询的匹配度（30%）\n" +
+                    "   - 活动标题与用户查询的匹配度（70%）\n" +
                     "   - 活动描述与用户查询的匹配度（20%）\n" +
                     "   - 活动类型与用户查询的匹配度（10%）\n" +
                     "2. 位置（权重：15%）：\n" +
@@ -69,22 +69,21 @@ public class AIService {
                     "   - 活动状态：招募中(1) > 进行中(2)\n" +
                     "   - 参与人数：当前参与人数越多，得分越高\n" +
                     "   - 剩余名额：剩余名额适中的活动得分更高\n" +
-
                     "\n" +
                     "推荐要求：\n" +
                     "- 只推荐状态为1（招募中）的活动\n" +
-                    "- 首先确保推荐的活动与用户查询高度相关\n" +
+                    "- 只推荐与用户查询高度相关的活动，不相关的活动不要推荐\n" +
                     "- 优先推荐距离用户当前位置较近的活动\n" +
                     "- 按照推荐分数从高到低排序\n" +
-                    "- 推荐所有高度相关的活动，数量不限\n" +
+                    "- 只推荐最相关的活动，数量不限但必须是真正相关的\n" +
                     "- 如果没有高度相关的活动，返回空列表\n" +
                     "\n" +
                     "推荐步骤：\n" +
                     "1. 首先分析用户的查询内容，提取关键词和意图\n" +
                     "2. 过滤出状态为1（招募中）的活动\n" +
-                    "3. 计算每个活动的推荐分数\n" +
-                    "4. 按照推荐分数排序\n" +
-                    "5. 选择所有与用户查询高度相关的活动\n" +
+                    "3. 计算每个活动与用户查询的相关性得分\n" +
+                    "4. 只保留相关性得分高的活动（与用户查询真正相关的活动）\n" +
+                    "5. 按照推荐分数排序\n" +
                     "6. 确保推荐的活动距离用户位置合理\n" +
                     "\n" +
                     "示例分析：\n" +
@@ -119,15 +118,13 @@ public class AIService {
                     "- latitude: 23.1353\n" +
                     "推荐结果：只推荐活动1，因为活动2与\"想打羽毛球\"无关，活动3状态不是招募中\n" +
                     "\n" +
-                    "请根据用户的查询内容、位置信息和活动的相关属性，返回最匹配的活动列表。\n" +
-                    "请直接返回活动列表，每个活动包含id、title和description字段，格式如下：\n" +
-                    "活动ID: 1\n" +
-                    "活动标题: 想打羽毛球缺1人\n" +
-                    "活动描述: 希望找到羽毛球爱好者一起打球，水平不限，开心就好！\n" +
+                    "请根据用户的查询内容、位置信息和活动的相关属性，严格筛选并返回最匹配的活动列表。\n" +
+                    "请直接返回活动ID列表，每个ID占一行，格式如下：\n" +
+                    "1\n" +
+                    "2\n" +
+                    "3\n" +
                     "\n" +
-                    "活动ID: 2\n" +
-                    "活动标题: 周末一起去爬山\n" +
-                    "活动描述: 周末一起去爬山，欣赏自然风光\n");
+                    "如果没有相关的活动，请返回空列表，不要返回任何内容。\n");
 
 
 
@@ -141,7 +138,7 @@ public class AIService {
             
             requestBody.put("messages", messages);
             requestBody.put("stream", false);
-            requestBody.put("temperature", 0.1);
+            requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", 4096);
             requestBody.put("stream_options", new JSONObject().put("include_usage", true));
             
@@ -175,50 +172,37 @@ public class AIService {
                     String content = message.getString("content");
                     log.info("AI推荐内容: {}", content);
                     
-                    // 尝试解析活动列表
+                    // 尝试解析活动ID列表
                     try {
-                        // 解析文本格式的活动列表
-                        String[] activityBlocks = content.split("\n\n");
-                        for (String block : activityBlocks) {
-                            if (block.trim().isEmpty()) continue;
+                        // 解析文本格式的活动ID列表
+                        String[] lines = content.split("\n");
+                        for (String line : lines) {
+                            line = line.trim();
+                            if (line.isEmpty()) continue;
                             
-                            // 提取活动ID、标题和描述
-                            String[] lines = block.split("\n");
-                            Long id = null;
-                            String title = "";
-                            String description = "";
-                            
-                            for (String line : lines) {
-                                line = line.trim();
-                                if (line.startsWith("活动ID:")) {
-                                    try {
-                                        id = Long.parseLong(line.substring(5).trim());
-                                    } catch (Exception e) {
-                                        // 忽略解析错误
-                                    }
-                                } else if (line.startsWith("活动标题:")) {
-                                    title = line.substring(5).trim();
-                                } else if (line.startsWith("活动描述:")) {
-                                    description = line.substring(5).trim();
-                                }
-                            }
-                            
-                            // 如果成功提取了ID，添加到推荐列表
-                            if (id != null) {
+                            // 尝试解析ID
+                            try {
+                                Long id = Long.parseLong(line);
                                 // 查找对应的活动
                                 for (Activity activity : activities) {
-                                    if (activity.getId().equals(id)) {
-                                        recommendedActivities.add(activity);
+                                    if (activity.getId().equals(id) && activity.getStatus() == 1) {
+                                        // 检查是否已经添加过这个活动
+                                        if (!recommendedActivities.contains(activity)) {
+                                            recommendedActivities.add(activity);
+                                        }
                                         break;
                                     }
                                 }
+                            } catch (Exception e) {
+                                // 忽略非数字行
+                                continue;
                             }
                         }
                     } catch (Exception e) {
                         log.error("解析AI推荐内容失败: {}", e.getMessage());
                         // 如果解析失败，返回空列表
-                            recommendedActivities = new ArrayList<>();
-                            break;
+                        recommendedActivities = new ArrayList<>();
+                        break;
                     }
                 }
             } catch (Exception e) {
