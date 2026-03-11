@@ -34,8 +34,7 @@ public class AIService {
         try {
             // 构建请求参数
             JSONObject requestBody = new JSONObject();
-            requestBody.put("app_id", APP_ID);
-            requestBody.put("uid", "user_" + System.currentTimeMillis());
+            requestBody.put("model", "deepseek-v3.1-chat"); // 使用正确的模型ID
             
             JSONArray messages = new JSONArray();
             
@@ -56,7 +55,15 @@ public class AIService {
                     "- status: 活动状态（1招募中，2进行中，3已结束，4已取消）\n" +
                     "- type: 活动类型（0其他，1运动，2约饭，3学习，4游戏，5出行）\n" +
                     "- highCredit: 高信用标识（0否，1是）\n" +
-                    "请根据用户的查询内容、位置信息和活动的相关属性，返回最匹配的活动列表。");
+                    "请根据用户的查询内容、位置信息和活动的相关属性，返回最匹配的活动列表。" +
+                    "请严格按照以下JSON格式返回结果：\n" +
+                    "[\n" +
+                    "  {\n" +
+                    "    \"id\": 1,\n" +
+                    "    \"title\": \"活动标题\",\n" +
+                    "    \"description\": \"活动描述\"\n" +
+                    "  }\n" +
+                    "]");
             messages.put(systemMsg);
             
             // 用户消息，包含查询和位置
@@ -66,6 +73,9 @@ public class AIService {
             messages.put(userMsg);
             
             requestBody.put("messages", messages);
+            requestBody.put("temperature", 0.7);
+            requestBody.put("max_tokens", 2048);
+            requestBody.put("response_format", new JSONObject().put("type", "json_object"));
             
             // 设置请求头
             HttpHeaders headers = new HttpHeaders();
@@ -88,7 +98,7 @@ public class AIService {
             List<Activity> recommendedActivities = new ArrayList<>();
             try {
                 JSONObject responseBody = new JSONObject(responseBodyStr);
-                JSONArray choices = responseBody.getJSONObject("result").getJSONArray("choices");
+                JSONArray choices = responseBody.getJSONArray("choices");
                 
                 // 提取推荐的活动
                 for (int i = 0; i < choices.length(); i++) {
