@@ -538,8 +538,11 @@ public class EventController {
     
     @Operation(summary = "AI智能查询活动", description = "根据用户查询语句和位置信息，使用AI推荐最匹配的活动")
     @PostMapping("/ai/search")
-    public Result aiSearchEvent(@RequestBody AISearchRequest request) {
+    public Result aiSearchEvent(
+            jakarta.servlet.http.HttpServletRequest httpRequest,
+            @RequestBody AISearchRequest request) {
         try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
             // 验证参数
             if (request.getQuery() == null || request.getQuery().trim().isEmpty()) {
                 return Result.error("查询语句不能为空");
