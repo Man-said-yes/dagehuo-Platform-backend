@@ -570,10 +570,7 @@ public class EventController {
         }
     }
     
-    /**
-     * AI兴趣推荐活动接口
-     * 根据用户参加过的活动分析兴趣，推荐匹配的招募中活动
-     */
+    @Operation(summary = "AI兴趣推荐活动", description = "根据用户历史参与活动分析兴趣偏好，推荐最匹配的活动")
     @PostMapping("/ai/interest")
     public Result aiInterestRecommendEvent(@RequestBody AISearchRequest request, HttpServletRequest httpRequest) {
         try {
