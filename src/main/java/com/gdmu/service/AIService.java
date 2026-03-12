@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface AIService {
     AIResponse getRecommendedActivities(String query, Double longitude, Double latitude, List<Activity> activities);
+    AIResponse getInterestRecommendedActivities(Long userId, Double longitude, Double latitude, List<Activity> recruitingActivities, List<Activity> userActivities);
 }

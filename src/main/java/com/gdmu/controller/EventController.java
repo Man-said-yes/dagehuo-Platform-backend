@@ -13,8 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/event")
@@ -560,6 +562,46 @@ public class EventController {
                     request.getLongitude(),
                     request.getLatitude(),
                     activities
+            );
+            
+            return Result.success(aiResponse);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * AI兴趣推荐活动接口
+     * 根据用户参加过的活动分析兴趣，推荐匹配的招募中活动
+     */
+    @PostMapping("/ai/interest")
+    public Result aiInterestRecommendEvent(@RequestBody AISearchRequest request, HttpServletRequest httpRequest) {
+        try {
+            // 获取当前用户ID
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (userId == null) {
+                return Result.error("用户未登录");
+            }
+            
+            if (request.getLongitude() == null || request.getLatitude() == null) {
+                return Result.error("经纬度不能为空");
+            }
+            
+            // 获取用户参加过的活动
+            List<Activity> userActivities = activityService.getActivitiesByParticipantId(userId);
+            
+            // 获取所有招募中的活动
+            List<Activity> recruitingActivities = activityService.getAllActivities(1, 100, "create_time", "desc").stream()
+                    .filter(activity -> activity.getStatus() == 1)
+                    .collect(Collectors.toList());
+            
+            // 调用AI服务获取兴趣推荐活动
+            AIResponse aiResponse = aiService.getInterestRecommendedActivities(
+                    userId,
+                    request.getLongitude(),
+                    request.getLatitude(),
+                    recruitingActivities,
+                    userActivities
             );
             
             return Result.success(aiResponse);

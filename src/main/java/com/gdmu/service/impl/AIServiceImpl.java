@@ -165,6 +165,157 @@ public class AIServiceImpl implements AIService {
         }
     }
 
+    @Override
+    public AIResponse getInterestRecommendedActivities(Long userId, Double longitude, Double latitude, List<Activity> recruitingActivities, List<Activity> userActivities) {
+        try {
+            // 1. 检查招募中的活动是否为空
+            if (recruitingActivities.isEmpty()) {
+                AIResponse emptyResponse = new AIResponse();
+                emptyResponse.setRecommendedActivities(new ArrayList<>());
+                return emptyResponse;
+            }
+
+            // 2. 从用户参加过的活动中随机抽取15条
+            List<Activity> sampledUserActivities = new ArrayList<>();
+            if (!userActivities.isEmpty()) {
+                // 随机打乱用户活动列表
+                java.util.Collections.shuffle(userActivities);
+                // 取前15条
+                int takeCount = Math.min(15, userActivities.size());
+                sampledUserActivities = userActivities.subList(0, takeCount);
+            }
+
+            // 3. 构建请求参数
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", "xop3qwen1b7");
+
+            JSONArray messages = new JSONArray();
+
+            // 系统消息：让AI根据用户兴趣推荐活动
+            JSONObject systemMsg = new JSONObject();
+            systemMsg.put("role", "system");
+            systemMsg.put("content", "### 核心规则\n" +
+                    "1. 仅返回JSON格式，无任何额外文字，格式：{\"recommendIds\":[1,2,3]}\n" +
+                    "2. 根据用户参加过的活动，分析用户兴趣偏好，推荐最匹配的招募中活动\n" +
+                    "3. 优先推荐距离用户（经度"+longitude+",纬度"+latitude+"）3公里内的活动\n" +
+                    "4. 无匹配活动返回：{\"recommendIds\":[]}\n" +
+                    "### 活动字段说明\n" +
+                    "- id: 活动ID\n" +
+                    "- title: 活动标题\n" +
+                    "- description: 活动描述\n" +
+                    "- type: 活动类型（0其他，1运动，2约饭，3学习，4游戏，5出行）\n" +
+                    "- longitude: 活动地点经度\n" +
+                    "- latitude: 活动地点纬度\n" +
+                    "- highCredit: 高信用标识（1表示该活动为高信用活动，0表示普通活动）");
+            messages.put(systemMsg);
+
+            // 用户消息：包含用户参加过的活动和招募中的活动
+            JSONObject userMsg = new JSONObject();
+            StringBuilder activitiesStr = new StringBuilder();
+
+            // 添加用户参加过的活动
+            if (!sampledUserActivities.isEmpty()) {
+                activitiesStr.append("用户参加过的活动：\n");
+                for (Activity activity : sampledUserActivities) {
+                    String typeStr = getTypeString(activity.getType());
+                    activitiesStr.append("活动ID " + activity.getId() + "：" + activity.getTitle() + "，" + activity.getDescription() + "，类型：" + typeStr + "\n");
+                }
+                activitiesStr.append("\n");
+            }
+
+            // 添加招募中的活动
+            activitiesStr.append("招募中的活动：\n");
+            for (Activity activity : recruitingActivities) {
+                String typeStr = getTypeString(activity.getType());
+                String highCreditStr = activity.getHighCredit() == 1 ? "高信用" : "普通";
+                // 计算距离
+                double distance = 0.0;
+                if (activity.getLongitude() != null && activity.getLatitude() != null) {
+                    distance = calculateDistance(latitude, longitude, activity.getLatitude(), activity.getLongitude());
+                }
+                activitiesStr.append("活动ID " + activity.getId() + "：" + activity.getTitle() + "，" + activity.getDescription() + "，地点：" + activity.getLocation() + "，类型：" + typeStr + "，距离：" + String.format("%.2f", distance) + "公里，信用等级：" + highCreditStr + "\n");
+            }
+
+            userMsg.put("role", "user");
+            userMsg.put("content", "用户ID：" + userId + "，当前位置经度 " + longitude + "，纬度 " + latitude + "\n请根据用户参加过的活动分析用户兴趣，推荐最匹配的招募中活动：\n" + activitiesStr.toString());
+            messages.put(userMsg);
+
+            requestBody.put("messages", messages);
+            requestBody.put("stream", false);
+            requestBody.put("temperature", 0.1); // 关键：降低随机性，精准匹配
+            requestBody.put("top_p", 0.1); // 补充：限制AI仅选高匹配结果
+            requestBody.put("max_tokens", 2048);
+            requestBody.put("stream_options", new JSONObject().put("include_usage", true));
+
+            // 4. 设置请求头
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            headers.set("Authorization", "Bearer " + API_KEY);
+
+            // 5. 发送请求
+            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody.toString(), headers);
+            ResponseEntity<String> responseEntity = restTemplate.exchange(
+                    API_URL,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class
+            );
+
+            // 6. 解析响应
+            String responseBodyStr = responseEntity.getBody();
+            log.info("AI API响应内容: {}", responseBodyStr);
+
+            List<Activity> recommendedActivities = new ArrayList<>();
+            try {
+                JSONObject responseBody = new JSONObject(responseBodyStr);
+                JSONArray choices = responseBody.getJSONArray("choices");
+
+                if (choices.length() > 0) {
+                    JSONObject choice = choices.getJSONObject(0);
+                    JSONObject message = choice.getJSONObject("message");
+                    String content = message.getString("content");
+                    log.info("AI推荐内容: {}", content);
+
+                    // 提取纯JSON（容错：AI可能加多余文字）
+                    String pureJson = extractPureJson(content);
+                    JSONObject aiResult = new JSONObject(pureJson);
+                    JSONArray recommendIds = aiResult.getJSONArray("recommendIds");
+
+                    // 匹配原始活动
+                    for (int i = 0; i < recommendIds.length(); i++) {
+                        Long recId = recommendIds.getLong(i);
+                        for (Activity activity : recruitingActivities) {
+                            if (activity.getId().equals(recId) && !recommendedActivities.contains(activity)) {
+                                recommendedActivities.add(activity);
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.error("解析AI JSON失败: {}", e.getMessage());
+                // 兜底：返回所有招募中活动
+                recommendedActivities = recruitingActivities;
+            }
+
+            // 最终返回：去重+保证只返回招募中活动
+            recommendedActivities = recommendedActivities.stream()
+                    .filter(act -> act.getStatus() == 1)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            AIResponse aiResponse = new AIResponse();
+            aiResponse.setRecommendedActivities(recommendedActivities);
+            return aiResponse;
+
+        } catch (Exception e) {
+            log.error("AI兴趣推荐服务异常: {}", e.getMessage(), e);
+            AIResponse aiResponse = new AIResponse();
+            aiResponse.setRecommendedActivities(new ArrayList<>());
+            return aiResponse;
+        }
+    }
+
     // 工具方法：提取纯JSON（容错AI返回多余文字）
     private String extractPureJson(String rawContent) {
         int start = rawContent.indexOf("{");
