@@ -73,7 +73,12 @@ public class AIService {
             for (Activity activity : recruitingActivities) {
                 String typeStr = getTypeString(activity.getType());
                 String highCreditStr = activity.getHighCredit() == 1 ? "高信用" : "普通";
-                activitiesStr.append("活动ID " + activity.getId() + "：" + activity.getTitle() + "，" + activity.getDescription() + "，地点：" + activity.getLocation() + "，类型：" + typeStr + "，经度：" + activity.getLongitude() + "，纬度：" + activity.getLatitude() + "，信用等级：" + highCreditStr + "\n");
+                // 计算距离
+                double distance = 0.0;
+                if (activity.getLongitude() != null && activity.getLatitude() != null) {
+                    distance = calculateDistance(latitude, longitude, activity.getLatitude(), activity.getLongitude());
+                }
+                activitiesStr.append("活动ID " + activity.getId() + "：" + activity.getTitle() + "，" + activity.getDescription() + "，地点：" + activity.getLocation() + "，类型：" + typeStr + "，距离：" + String.format("%.2f", distance) + "公里，信用等级：" + highCreditStr + "\n");
 
             }
             userMsg.put("role", "user");
@@ -179,5 +184,17 @@ public class AIService {
             case 5: return "出行";
             default: return "其他";
         }
+    }
+    
+    // 工具方法：计算两点之间的距离（单位：公里）
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // 地球半径（公里）
+        double latDistance = Math.toRadians(lat2 - lat1);
+        double lonDistance = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }
