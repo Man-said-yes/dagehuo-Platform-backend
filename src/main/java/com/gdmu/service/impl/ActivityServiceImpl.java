@@ -807,4 +807,19 @@ public class ActivityServiceImpl implements ActivityService {
             throw new RuntimeException("AI自动审核举报失败: " + e.getMessage());
         }
     }
+    
+    @Override
+    public List<Activity> searchActivitiesByTitle(String keyword) {
+        log.info("根据标题搜索活动，关键词: {}", keyword);
+        
+        if (keyword == null || keyword.trim().isEmpty()) {
+            log.warn("搜索关键词为空，返回空列表");
+            return new java.util.ArrayList<>();
+        }
+        
+        List<Activity> activities = activityMapper.searchByTitle(keyword.trim());
+        log.info("搜索到{}个活动", activities.size());
+        
+        return activities;
+    }
 }

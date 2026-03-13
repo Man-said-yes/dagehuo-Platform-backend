@@ -646,4 +646,19 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+    
+    @Operation(summary = "搜索活动", description = "根据标题关键词搜索正在招募的活动")
+    @GetMapping("/search")
+    public Result searchActivities(@RequestParam String keyword) {
+        try {
+            if (keyword == null || keyword.trim().isEmpty()) {
+                return Result.error("搜索关键词不能为空");
+            }
+            
+            List<Activity> activities = activityService.searchActivitiesByTitle(keyword);
+            return Result.success(activities);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

@@ -134,4 +134,9 @@ public interface ActivityService {
      * AI自动审核举报
      */
     void aiAutoReview();
+    
+    /**
+     * 根据标题模糊搜索正在招募的活动
+     */
+    List<Activity> searchActivitiesByTitle(String keyword);
 }

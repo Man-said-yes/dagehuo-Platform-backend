@@ -105,4 +105,8 @@ public interface ActivityMapper {
             "</if>",
             "</script>"})
     int countActivitiesByDistance(@Param("type") Integer type);
+    
+    // 根据标题模糊查询正在招募的活动
+    @Select("SELECT * FROM activity WHERE status = 1 AND title LIKE CONCAT('%', #{keyword}, '%') ORDER BY create_time DESC")
+    List<Activity> searchByTitle(@Param("keyword") String keyword);
 }
