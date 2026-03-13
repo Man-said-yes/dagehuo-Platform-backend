@@ -12,6 +12,7 @@ import com.gdmu.service.AIService;
 import com.gdmu.service.ChatService;
 import com.gdmu.service.SystemNotificationService;
 import com.gdmu.pojo.User;
+import com.gdmu.util.RedisActivityUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,9 @@ public class ActivityServiceImpl implements ActivityService {
     
     @Autowired
     private ChatGroupMapper chatGroupMapper;
+    
+    @Autowired
+    private RedisActivityUtil redisActivityUtil;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -110,6 +114,9 @@ public class ActivityServiceImpl implements ActivityService {
             // 发送活动创建通知
             systemNotificationService.sendActivityCreateNotification(activity.getId(), creatorId, activity.getTitle());
             
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
+            
             log.info("活动创建成功，eventId: {}，创建者已自动加入", activity.getId());
             return activity;
 
@@ -128,15 +135,37 @@ public class ActivityServiceImpl implements ActivityService {
     @Override
     public List<Activity> getAllActivities(int page, int pageSize, String sortBy, String order) {
         log.info("查询所有活动（分页），page: {}, pageSize: {}, sortBy: {}, order: {}", page, pageSize, sortBy, order);
+        
+        String cacheKey = redisActivityUtil.buildListKey(page, pageSize, sortBy, order);
+        List<Activity> cachedActivities = redisActivityUtil.getActivityList(cacheKey);
+        if (cachedActivities != null) {
+            return cachedActivities;
+        }
+        
         int offset = (page - 1) * pageSize;
-        return activityMapper.selectAllWithPagination(offset, pageSize, sortBy, order);
+        List<Activity> activities = activityMapper.selectAllWithPagination(offset, pageSize, sortBy, order);
+        
+        redisActivityUtil.cacheActivityList(cacheKey, activities);
+        
+        return activities;
     }
 
     @Override
     public List<Activity> getActivitiesByType(Integer type, int page, int pageSize, String sortBy, String order) {
         log.info("查询活动类型（分页）: {}, page: {}, pageSize: {}, sortBy: {}, order: {}", type, page, pageSize, sortBy, order);
+        
+        String cacheKey = redisActivityUtil.buildListByTypeKey(type, page, pageSize, sortBy, order);
+        List<Activity> cachedActivities = redisActivityUtil.getActivityList(cacheKey);
+        if (cachedActivities != null) {
+            return cachedActivities;
+        }
+        
         int offset = (page - 1) * pageSize;
-        return activityMapper.selectByTypeWithPagination(type, offset, pageSize, sortBy, order);
+        List<Activity> activities = activityMapper.selectByTypeWithPagination(type, offset, pageSize, sortBy, order);
+        
+        redisActivityUtil.cacheActivityList(cacheKey, activities);
+        
+        return activities;
     }
 
     @Override
@@ -197,6 +226,9 @@ public class ActivityServiceImpl implements ActivityService {
             if (rows <= 0) {
                 throw new RuntimeException("更新活动失败");
             }
+            
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
 
             log.info("活动更新成功，eventId: {}", eventId);
 
@@ -221,6 +253,9 @@ public class ActivityServiceImpl implements ActivityService {
             if (rows <= 0) {
                 throw new RuntimeException("删除活动失败");
             }
+            
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
 
             log.info("活动删除成功，eventId: {}", eventId);
 
@@ -290,6 +325,9 @@ public class ActivityServiceImpl implements ActivityService {
             if (newMember != null) {
                 systemNotificationService.sendNewMemberJoinNotification(activityId, activity.getTitle(), userId, newMember.getNickname());
             }
+            
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
 
             log.info("用户加入活动成功，activityId: {}, userId: {}", activityId, userId);
 
@@ -349,6 +387,9 @@ public class ActivityServiceImpl implements ActivityService {
                 chatGroupMapper.updateStatusByActivityId(activityId, 2);
                 log.info("活动已取消，群聊已解散，activityId: {}", activityId);
             }
+            
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
 
             log.info("活动状态更新成功，activityId: {}, status: {}", activityId, status);
 
@@ -406,6 +447,9 @@ public class ActivityServiceImpl implements ActivityService {
             } else {
                 log.warn("未找到活动对应的聊天群，activityId: {}", activityId);
             }
+            
+            // 清除活动列表缓存
+            redisActivityUtil.clearAllActivityCache();
 
             log.info("用户退出活动成功，activityId: {}, userId: {}", activityId, userId);
 
@@ -817,8 +861,16 @@ public class ActivityServiceImpl implements ActivityService {
             return new java.util.ArrayList<>();
         }
         
+        String cacheKey = redisActivityUtil.buildSearchKey(keyword.trim());
+        List<Activity> cachedActivities = redisActivityUtil.getActivityList(cacheKey);
+        if (cachedActivities != null) {
+            return cachedActivities;
+        }
+        
         List<Activity> activities = activityMapper.searchByTitle(keyword.trim());
         log.info("搜索到{}个活动", activities.size());
+        
+        redisActivityUtil.cacheActivityList(cacheKey, activities);
         
         return activities;
     }
