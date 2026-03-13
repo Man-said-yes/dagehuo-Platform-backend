@@ -1,6 +1,8 @@
 package com.gdmu.service.impl;
 
 import com.gdmu.pojo.Activity;
+import com.gdmu.pojo.ActivityReport;
+import com.gdmu.pojo.AIReportSuggestion;
 import com.gdmu.pojo.AIResponse;
 import com.gdmu.service.AIService;
 import org.springframework.beans.factory.annotation.Value;
@@ -349,5 +351,109 @@ public class AIServiceImpl implements AIService {
                 * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
+    }
+    
+    @Override
+    public List<AIReportSuggestion> analyzeReports(List<ActivityReport> reports, List<Activity> activities) {
+        try {
+            if (reports.isEmpty()) {
+                return new ArrayList<>();
+            }
+            
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", "xop3qwen1b7");
+
+            JSONArray messages = new JSONArray();
+
+            JSONObject systemMsg = new JSONObject();
+            systemMsg.put("role", "system");
+            systemMsg.put("content", "### 核心规则\n" +
+                    "1. 仅返回JSON格式，无任何额外文字，格式：{\"suggestions\":[{\"reportId\":1,\"reason\":\"审核理由\"},{\"reportId\":2,\"reason\":\"审核理由\"}]}\n" +
+                    "2. suggestions为建议下架的举报列表，每个包含reportId（举报ID）和reason（审核理由）\n" +
+                    "3. 审核理由要简洁明了，说明为什么建议下架该活动\n" +
+                    "4. 判断标准：\n" +
+                    "   - 如果活动内容正常，不建议下架\n" +
+                    "   - 如果活动标题或描述包含违法、违规、虚假信息，建议下架\n" +
+                    "5. 无需建议的活动返回：{\"suggestions\":[]}\n" +
+                    "6. 必须返回JSON格式，不能有其他文字");
+            messages.put(systemMsg);
+
+            StringBuilder contentBuilder = new StringBuilder();
+            contentBuilder.append("以下是被举报的活动列表，请判断哪些活动应该下架：\n\n");
+            
+            java.util.Map<Long, Activity> activityMap = new java.util.HashMap<>();
+            for (Activity activity : activities) {
+                activityMap.put(activity.getId(), activity);
+            }
+            
+            for (ActivityReport report : reports) {
+                Activity activity = activityMap.get(report.getActivityId());
+                if (activity != null) {
+                    contentBuilder.append("举报ID " + report.getId() + "：活动ID " + activity.getId() + "，标题：" + activity.getTitle() + "，描述：" + activity.getDescription() + "\n");
+                }
+            }
+            
+            contentBuilder.append("\n请返回建议下架的举报列表，格式：{\"suggestions\":[{\"reportId\":1,\"reason\":\"审核理由\"}]}");
+
+            JSONObject userMsg = new JSONObject();
+            userMsg.put("role", "user");
+            userMsg.put("content", contentBuilder.toString());
+            messages.put(userMsg);
+
+            requestBody.put("messages", messages);
+            requestBody.put("stream", false);
+            requestBody.put("temperature", 0.1);
+            requestBody.put("top_p", 0.1);
+            requestBody.put("max_tokens", 2048);
+            requestBody.put("stream_options", new JSONObject().put("include_usage", true));
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            headers.set("Authorization", "Bearer " + API_KEY);
+
+            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody.toString(), headers);
+            ResponseEntity<String> responseEntity = restTemplate.exchange(
+                    API_URL,
+                    HttpMethod.POST,
+                    requestEntity,
+                    String.class
+            );
+
+            String responseBodyStr = responseEntity.getBody();
+            log.info("AI举报分析响应内容: {}", responseBodyStr);
+
+            try {
+                JSONObject responseBody = new JSONObject(responseBodyStr);
+                JSONArray choices = responseBody.getJSONArray("choices");
+
+                if (choices.length() > 0) {
+                    JSONObject choice = choices.getJSONObject(0);
+                    JSONObject message = choice.getJSONObject("message");
+                    String content = message.getString("content");
+                    log.info("AI建议内容: {}", content);
+
+                    String pureJson = extractPureJson(content);
+                    JSONObject aiResult = new JSONObject(pureJson);
+                    JSONArray suggestions = aiResult.getJSONArray("suggestions");
+                    
+                    List<AIReportSuggestion> result = new ArrayList<>();
+                    for (int i = 0; i < suggestions.length(); i++) {
+                        JSONObject suggestion = suggestions.getJSONObject(i);
+                        AIReportSuggestion aiSuggestion = new AIReportSuggestion();
+                        aiSuggestion.setReportId(suggestion.getLong("reportId"));
+                        aiSuggestion.setReason(suggestion.getString("reason"));
+                        result.add(aiSuggestion);
+                    }
+                    return result;
+                }
+            } catch (Exception e) {
+                log.error("解析AI举报分析JSON失败: {}", e.getMessage());
+            }
+
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("AI举报分析服务异常: {}", e.getMessage(), e);
+            return new ArrayList<>();
+        }
     }
 }

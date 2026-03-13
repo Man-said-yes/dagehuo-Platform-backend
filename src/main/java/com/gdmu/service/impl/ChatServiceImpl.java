@@ -42,12 +42,15 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ChatGroup createGroup(Long activityId, String groupName) {
-        log.info("创建群聊，activityId: {}, groupName: {}", activityId, groupName);
+    public ChatGroup createGroup(Long activityId, String groupName, Long ownerId) {
+        log.info("创建活动群聊，activityId: {}, groupName: {}, ownerId: {}", activityId, groupName, ownerId);
         
         ChatGroup chatGroup = new ChatGroup();
         chatGroup.setName(groupName);
+        chatGroup.setType(1);
         chatGroup.setActivityId(activityId);
+        chatGroup.setOwnerId(ownerId);
+        chatGroup.setStatus(1);
         
         int rows = chatGroupMapper.insert(chatGroup);
         if (rows <= 0) {
@@ -81,6 +84,8 @@ public class ChatServiceImpl implements ChatService {
             Map<String, Object> groupInfo = new HashMap<>();
             groupInfo.put("groupId", group.getId());
             groupInfo.put("groupName", group.getName());
+            groupInfo.put("type", group.getType());
+            groupInfo.put("status", group.getStatus());
             groupInfo.put("activityId", group.getActivityId());
 
             ChatMessage lastMessage = chatMessageMapper.selectLastMessageByGroupId(group.getId());
@@ -231,5 +236,38 @@ public class ChatServiceImpl implements ChatService {
         if (rows <= 0) {
             throw new RuntimeException("移除群成员失败");
         }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ChatGroup createInterestGroup(Long activityId, String groupName, Long ownerId) {
+        log.info("创建兴趣群，activityId: {}, groupName: {}, ownerId: {}", activityId, groupName, ownerId);
+        
+        ChatGroup chatGroup = new ChatGroup();
+        chatGroup.setName(groupName);
+        chatGroup.setType(2);
+        chatGroup.setActivityId(activityId);
+        chatGroup.setOwnerId(ownerId);
+        chatGroup.setStatus(1);
+        
+        int rows = chatGroupMapper.insert(chatGroup);
+        if (rows <= 0) {
+            throw new RuntimeException("创建兴趣群失败");
+        }
+        
+        return chatGroup;
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void dissolveGroup(Long groupId) {
+        log.info("解散群聊，groupId: {}", groupId);
+        
+        int rows = chatGroupMapper.updateStatusById(groupId, 2);
+        if (rows <= 0) {
+            throw new RuntimeException("解散群聊失败");
+        }
+        
+        log.info("群聊已解散，groupId: {}", groupId);
     }
 }

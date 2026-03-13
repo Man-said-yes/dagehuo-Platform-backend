@@ -7,7 +7,7 @@ import java.util.List;
 
 @Mapper
 public interface ChatGroupMapper {
-    @Insert("INSERT INTO chat_group(name, activity_id) VALUES(#{name}, #{activityId})")
+    @Insert("INSERT INTO chat_group(name, type, activity_id, owner_id, status) VALUES(#{name}, #{type}, #{activityId}, #{ownerId}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(ChatGroup chatGroup);
 
@@ -25,4 +25,10 @@ public interface ChatGroupMapper {
 
     @Delete("DELETE FROM chat_group WHERE id = #{id}")
     int deleteById(Long id);
+    
+    @Update("UPDATE chat_group SET status = #{status} WHERE activity_id = #{activityId}")
+    int updateStatusByActivityId(@Param("activityId") Long activityId, @Param("status") Integer status);
+    
+    @Update("UPDATE chat_group SET status = #{status} WHERE id = #{id}")
+    int updateStatusById(@Param("id") Long id, @Param("status") Integer status);
 }

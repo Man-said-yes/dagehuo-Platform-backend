@@ -85,10 +85,13 @@ CREATE TABLE IF NOT EXISTS reviews (
 CREATE TABLE IF NOT EXISTS chat_group (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '群聊ID',
     name VARCHAR(100) NOT NULL COMMENT '群聊名称',
-    type TINYINT DEFAULT 1 COMMENT '群聊类型：1-系统消息群, 2-活动群, 3-自定义群',
-    activity_id BIGINT COMMENT '关联的活动ID（如果是活动群）',
+    type TINYINT DEFAULT 1 COMMENT '群聊类型：1-活动群聊（默认），2-兴趣群',
+    activity_id BIGINT COMMENT '关联的活动ID（如果是活动群聊）',
+    owner_id BIGINT COMMENT '群主ID（活动发布人）',
+    status TINYINT DEFAULT 1 COMMENT '群聊状态：1-正常，2-解散',
     create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE
+    FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
+    FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天群表';
 
 -- 群成员表
@@ -137,6 +140,8 @@ CREATE TABLE IF NOT EXISTS activity_report (
     report_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '举报时间（自动填充当前时间）',
     handle_status TINYINT(1) DEFAULT 0 COMMENT '处理状态：0 = 未处理，1 = 已核实（下架活动），2 = 已驳回（举报不成立）',
     handle_time DATETIME COMMENT '处理时间（处理时自动填充）',
+    ai_suggestion TINYINT(1) DEFAULT 0 COMMENT 'AI建议：0 = 默认（无建议），1 = AI建议下架',
+    ai_suggested TINYINT(1) DEFAULT 0 COMMENT 'AI是否建议过：0 = 默认（未建议），1 = AI已建议过',
     FOREIGN KEY (activity_id) REFERENCES activity(id) ON DELETE CASCADE,
     FOREIGN KEY (reporter_user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='活动举报表';

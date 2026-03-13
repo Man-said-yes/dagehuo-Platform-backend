@@ -16,4 +16,6 @@ public class ActivityReport {
     private Date reportTime;         // 举报时间（自动填充当前时间）
     private Integer handleStatus;    // 处理状态：0 = 未处理，1 = 已核实（下架活动），2 = 已驳回（举报不成立）
     private Date handleTime;         // 处理时间（处理时自动填充）
+    private Integer aiSuggestion;    // AI建议：0 = 默认（无建议），1 = AI建议下架
+    private Integer aiSuggested;     // AI是否建议过：0 = 默认（未建议），1 = AI已建议过
 }

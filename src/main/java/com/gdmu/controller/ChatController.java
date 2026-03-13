@@ -52,7 +52,27 @@ public class ChatController {
             if (group == null) {
                 return Result.error("群聊不存在");
             }
-            return Result.success(group);
+            
+            java.util.Map<String, Object> result = new java.util.HashMap<>();
+            result.put("id", group.getId());
+            result.put("name", group.getName());
+            result.put("type", group.getType());
+            result.put("activityId", group.getActivityId());
+            result.put("status", group.getStatus());
+            result.put("createTime", group.getCreateTime());
+            
+            if (group.getOwnerId() != null) {
+                User owner = userMapper.selectById(group.getOwnerId());
+                if (owner != null) {
+                    java.util.Map<String, Object> ownerInfo = new java.util.HashMap<>();
+                    ownerInfo.put("userId", owner.getId());
+                    ownerInfo.put("nickname", owner.getNickname());
+                    ownerInfo.put("avatar", owner.getAvatar());
+                    result.put("owner", ownerInfo);
+                }
+            }
+            
+            return Result.success(result);
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }
@@ -170,6 +190,36 @@ public class ChatController {
                 }
             }
             return Result.success(onlineUsers);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    @Operation(summary = "创建兴趣群", description = "活动结束后创建兴趣群（需要大于2人）")
+    @PostMapping("/interest-group")
+    public Result createInterestGroup(@RequestBody Map<String, Object> request) {
+        try {
+            Long activityId = Long.valueOf(request.get("activityId").toString());
+            String groupName = (String) request.get("groupName");
+            Long ownerId = Long.valueOf(request.get("ownerId").toString());
+            
+            if (groupName == null || groupName.trim().isEmpty()) {
+                return Result.error("群聊名称不能为空");
+            }
+            
+            ChatGroup chatGroup = chatService.createInterestGroup(activityId, groupName, ownerId);
+            return Result.success(chatGroup);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    @Operation(summary = "解散群聊", description = "将群聊状态设置为解散")
+    @PostMapping("/group/{groupId}/dissolve")
+    public Result dissolveGroup(@PathVariable Long groupId) {
+        try {
+            chatService.dissolveGroup(groupId);
+            return Result.success("群聊已解散");
         } catch (Exception e) {
             return Result.error(e.getMessage());
         }

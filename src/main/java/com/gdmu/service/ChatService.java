@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface ChatService {
-    ChatGroup createGroup(Long activityId, String groupName);
+    ChatGroup createGroup(Long activityId, String groupName, Long ownerId);
     ChatGroup getGroupById(Long groupId);
     ChatGroup getGroupByActivityId(Long activityId);
     List<Map<String, Object>> getUserGroups(Long userId);
@@ -17,4 +17,6 @@ public interface ChatService {
     void markMessageAsRead(Long groupId, Long userId, Long lastReadMessageId);
     void addGroupMember(Long groupId, Long userId);
     void removeGroupMember(Long groupId, Long userId);
+    ChatGroup createInterestGroup(Long activityId, String groupName, Long ownerId);
+    void dissolveGroup(Long groupId);
 }

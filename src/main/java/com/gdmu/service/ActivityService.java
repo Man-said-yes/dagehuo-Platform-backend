@@ -124,4 +124,14 @@ public interface ActivityService {
      * 驳回举报
      */
     void rejectReport(Long reportId);
+    
+    /**
+     * AI建议举报处理
+     */
+    void aiSuggestReports();
+    
+    /**
+     * AI自动审核举报
+     */
+    void aiAutoReview();
 }

@@ -606,4 +606,44 @@ public class EventController {
             return Result.error(e.getMessage());
         }
     }
+    
+    @Operation(summary = "AI建议举报处理", description = "AI对未建议的举报进行分析并给出建议")
+    @PostMapping("/ai/suggest")
+    public Result aiSuggestReports(@RequestBody java.util.Map<String, Integer> request) {
+        try {
+            Integer enable = request.get("enable");
+            if (enable == null) {
+                return Result.error("开关参数不能为空");
+            }
+            
+            if (enable == 1) {
+                activityService.aiSuggestReports();
+                return Result.success("AI建议处理完成");
+            } else {
+                return Result.success("AI建议处理已关闭");
+            }
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    @Operation(summary = "AI自动审核举报", description = "AI自动审核举报并下架违规活动")
+    @PostMapping("/ai/auto-review")
+    public Result aiAutoReview(@RequestBody java.util.Map<String, Integer> request) {
+        try {
+            Integer enable = request.get("enable");
+            if (enable == null) {
+                return Result.error("开关参数不能为空");
+            }
+            
+            if (enable == 1) {
+                activityService.aiAutoReview();
+                return Result.success("AI自动审核完成");
+            } else {
+                return Result.success("AI自动审核已关闭");
+            }
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
+    }
 }

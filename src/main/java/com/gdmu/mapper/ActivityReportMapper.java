@@ -55,4 +55,16 @@ public interface ActivityReportMapper {
     // 根据活动ID更新所有举报记录的处理状态
     @Update("UPDATE activity_report SET handle_status = #{handleStatus}, handle_time = CURRENT_TIMESTAMP WHERE activity_id = #{activityId}")
     int updateHandleStatusByActivityId(@Param("activityId") Long activityId, @Param("handleStatus") Integer handleStatus);
+    
+    // 查询未建议过的举报记录（ai_suggested = 0）
+    @Select("SELECT * FROM activity_report WHERE ai_suggested = 0")
+    List<ActivityReport> selectUnsuggestedReports();
+    
+    // 更新AI建议字段
+    @Update("UPDATE activity_report SET ai_suggestion = #{aiSuggestion}, ai_suggested = 1 WHERE id = #{id}")
+    int updateAiSuggestion(@Param("id") Long id, @Param("aiSuggestion") Integer aiSuggestion);
+    
+    // 查询已建议但未处理的举报记录（ai_suggested = 1 AND handle_status = 0）
+    @Select("SELECT * FROM activity_report WHERE ai_suggested = 1 AND handle_status = 0")
+    List<ActivityReport> selectSuggestedButUnprocessedReports();
 }

@@ -2,11 +2,13 @@ package com.gdmu.service.impl;
 
 import com.gdmu.mapper.ActivityMapper;
 import com.gdmu.mapper.ActivityReportMapper;
+import com.gdmu.mapper.ChatGroupMapper;
 import com.gdmu.mapper.ParticipantMapper;
 import com.gdmu.mapper.UserMapper;
 import com.gdmu.pojo.Activity;
 import com.gdmu.pojo.Participant;
 import com.gdmu.service.ActivityService;
+import com.gdmu.service.AIService;
 import com.gdmu.service.ChatService;
 import com.gdmu.service.SystemNotificationService;
 import com.gdmu.pojo.User;
@@ -41,6 +43,12 @@ public class ActivityServiceImpl implements ActivityService {
 
     @Autowired
     private SystemNotificationService systemNotificationService;
+    
+    @Autowired
+    private AIService aiService;
+    
+    @Autowired
+    private ChatGroupMapper chatGroupMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -91,7 +99,7 @@ public class ActivityServiceImpl implements ActivityService {
 
             // 创建活动对应的聊天群
             try {
-                var group = chatService.createGroup(activity.getId(), activity.getTitle() + "-聊天群");
+                var group = chatService.createGroup(activity.getId(), activity.getTitle() + "-聊天群", creatorId);
                 // 将创建者添加到聊天群
                 chatService.addGroupMember(group.getId(), creatorId);
                 log.info("活动聊天群创建成功，activityId: {}, groupId: {}", activity.getId(), group.getId());
@@ -316,8 +324,30 @@ public class ActivityServiceImpl implements ActivityService {
             // 发送活动状态变更通知
             if (status == 3) { // 已结束
                 systemNotificationService.sendActivityEndNotification(activityId, activity.getTitle());
+                // 更新活动群聊状态为解散
+                chatGroupMapper.updateStatusByActivityId(activityId, 2);
+                log.info("活动已结束，活动群聊已解散，activityId: {}", activityId);
+                
+                // 检查参与人数，如果大于2人则创建兴趣群
+                List<Participant> participants = participantMapper.selectByActivityId(activityId);
+                if (participants.size() > 2) {
+                    String interestGroupName = activity.getTitle() + "兴趣群";
+                    com.gdmu.pojo.ChatGroup interestGroup = chatService.createInterestGroup(activityId, interestGroupName, activity.getCreatorId());
+                    log.info("活动结束，创建兴趣群成功，groupId: {}, 参与人数: {}", interestGroup.getId(), participants.size());
+                    
+                    // 将所有参与者加入兴趣群
+                    for (Participant participant : participants) {
+                        chatService.addGroupMember(interestGroup.getId(), participant.getUserId());
+                    }
+                    log.info("已将{}名参与者加入兴趣群", participants.size());
+                } else {
+                    log.info("参与人数不足3人，不创建兴趣群，当前人数: {}", participants.size());
+                }
             } else if (status == 4) { // 已取消
                 systemNotificationService.sendActivityCancelNotification(activityId, activity.getTitle());
+                // 更新群聊状态为解散
+                chatGroupMapper.updateStatusByActivityId(activityId, 2);
+                log.info("活动已取消，群聊已解散，activityId: {}", activityId);
             }
 
             log.info("活动状态更新成功，activityId: {}, status: {}", activityId, status);
@@ -683,6 +713,98 @@ public class ActivityServiceImpl implements ActivityService {
         } catch (Exception e) {
             log.error("驳回举报失败: {}", e.getMessage());
             throw new RuntimeException("驳回举报失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void aiSuggestReports() {
+        log.info("开始AI建议举报处理");
+        
+        try {
+            List<com.gdmu.pojo.ActivityReport> unsuggestedReports = activityReportMapper.selectUnsuggestedReports();
+            log.info("找到{}条未建议的举报记录", unsuggestedReports.size());
+            
+            if (unsuggestedReports.isEmpty()) {
+                log.info("没有需要处理的举报记录");
+                return;
+            }
+            
+            List<Long> activityIds = unsuggestedReports.stream()
+                    .map(com.gdmu.pojo.ActivityReport::getActivityId)
+                    .distinct()
+                    .collect(java.util.stream.Collectors.toList());
+            
+            List<Activity> activities = new java.util.ArrayList<>();
+            for (Long activityId : activityIds) {
+                Activity activity = activityMapper.selectById(activityId);
+                if (activity != null) {
+                    activities.add(activity);
+                }
+            }
+            
+            List<com.gdmu.pojo.AIReportSuggestion> suggestions = aiService.analyzeReports(unsuggestedReports, activities);
+            
+            java.util.Map<Long, String> suggestionMap = new java.util.HashMap<>();
+            for (com.gdmu.pojo.AIReportSuggestion suggestion : suggestions) {
+                suggestionMap.put(suggestion.getReportId(), suggestion.getReason());
+            }
+            
+            for (com.gdmu.pojo.ActivityReport report : unsuggestedReports) {
+                int suggestion = suggestionMap.containsKey(report.getId()) ? 1 : 0;
+                activityReportMapper.updateAiSuggestion(report.getId(), suggestion);
+                
+                if (suggestion == 1) {
+                    String reason = suggestionMap.get(report.getId());
+                    log.info("AI建议下架举报ID: {}, 活动ID: {}, 审核理由: {}", report.getId(), report.getActivityId(), reason);
+                } else {
+                    log.info("AI不建议下架举报ID: {}, 活动ID: {}", report.getId(), report.getActivityId());
+                }
+            }
+            
+            log.info("AI建议举报处理完成，共处理{}条举报，建议下架{}条", unsuggestedReports.size(), suggestions.size());
+            
+        } catch (Exception e) {
+            log.error("AI建议举报处理失败: {}", e.getMessage());
+            throw new RuntimeException("AI建议举报处理失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void aiAutoReview() {
+        log.info("开始AI自动审核举报");
+        
+        try {
+            aiSuggestReports();
+            
+            List<com.gdmu.pojo.ActivityReport> suggestedReports = activityReportMapper.selectSuggestedButUnprocessedReports();
+            log.info("找到{}条已建议但未处理的举报记录", suggestedReports.size());
+            
+            int verifyCount = 0;
+            int rejectCount = 0;
+            
+            for (com.gdmu.pojo.ActivityReport report : suggestedReports) {
+                try {
+                    if (report.getAiSuggestion() != null && report.getAiSuggestion() == 1) {
+                        verifyReport(report.getId());
+                        verifyCount++;
+                        log.info("AI自动核实举报成功，已下架活动，reportId: {}, activityId: {}", report.getId(), report.getActivityId());
+                    } else if (report.getAiSuggestion() != null && report.getAiSuggestion() == 0) {
+                        rejectReport(report.getId());
+                        rejectCount++;
+                        log.info("AI自动驳回举报成功，reportId: {}, activityId: {}", report.getId(), report.getActivityId());
+                    }
+                } catch (Exception e) {
+                    log.error("AI自动审核失败，reportId: {}, error: {}", report.getId(), e.getMessage());
+                }
+            }
+            
+            log.info("AI自动审核举报完成，共处理{}条举报，核实{}条，驳回{}条", suggestedReports.size(), verifyCount, rejectCount);
+            
+        } catch (Exception e) {
+            log.error("AI自动审核举报失败: {}", e.getMessage());
+            throw new RuntimeException("AI自动审核举报失败: " + e.getMessage());
         }
     }
 }
