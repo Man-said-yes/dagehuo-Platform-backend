@@ -208,4 +208,77 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("登录处理失败: " + e.getMessage());
         }
     }
+    
+    @Override
+    public WechatLoginResponse register(String username, String password, String nickname) {
+        log.info("处理用户注册: {}", username);
+        
+        try {
+            // 检查用户名是否已存在
+            User existingUser = userMapper.selectByOpenid(username);
+            if (existingUser != null) {
+                throw new RuntimeException("用户名已存在");
+            }
+            
+            // 创建新用户
+            User newUser = new User();
+            newUser.setOpenid(username);
+            newUser.setPassword(password);
+            newUser.setNickname(nickname != null && !nickname.trim().isEmpty() ? nickname : NicknameGenerator.generate());
+            newUser.setAvatar("https://jinejie-java-ai.oss-cn-beijing.aliyuncs.com/001.jpg");
+            newUser.setCreditScore(100);
+            newUser.setHighCredit(0);
+            newUser.setRole("user");
+            userMapper.insert(newUser);
+            
+            // 生成token
+            String token = jwtUtil.generateToken(newUser.getId(), username, newUser.getRole());
+            
+            WechatLoginResponse response = new WechatLoginResponse();
+            response.setToken(token);
+            response.setUserId(newUser.getId());
+            response.setRegistered(false);
+            
+            log.info("用户注册成功，userId: {}, username: {}", newUser.getId(), username);
+            return response;
+            
+        } catch (Exception e) {
+            log.error("用户注册失败: {}", e.getMessage());
+            throw new RuntimeException("注册失败: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public WechatLoginResponse login(String username, String password) {
+        log.info("处理用户登录: {}", username);
+        
+        try {
+            // 查找用户
+            User user = userMapper.selectByOpenid(username);
+            if (user == null) {
+                throw new RuntimeException("用户名或密码错误");
+            }
+            
+            // 验证密码
+            if (!password.equals(user.getPassword())) {
+                throw new RuntimeException("用户名或密码错误");
+            }
+            
+            // 生成token
+            String token = jwtUtil.generateToken(user.getId(), username, user.getRole());
+            
+            WechatLoginResponse response = new WechatLoginResponse();
+            response.setToken(token);
+            response.setUserId(user.getId());
+            response.setRegistered(user.getStudentId() != null);
+            response.setStudentId(user.getStudentId());
+            
+            log.info("用户登录成功，userId: {}, username: {}", user.getId(), username);
+            return response;
+            
+        } catch (Exception e) {
+            log.error("用户登录失败: {}", e.getMessage());
+            throw new RuntimeException("登录失败: " + e.getMessage());
+        }
+    }
 }

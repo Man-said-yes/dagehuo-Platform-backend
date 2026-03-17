@@ -10,4 +10,8 @@ public interface AuthService {
     void bindStudent(Long userId, String studentId);
     
     WechatLoginResponse adminLogin(String username, String password);
+    
+    WechatLoginResponse register(String username, String password, String nickname);
+    
+    WechatLoginResponse login(String username, String password);
 }

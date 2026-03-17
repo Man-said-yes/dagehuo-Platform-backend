@@ -25,14 +25,49 @@ public class AuthController {
     @Autowired
     private AuthServiceImpl authService;
 
-    @Operation(summary = "微信登录", description = "通过微信code登录，返回JWT token")
-    @PostMapping("/login")
-    public Result login(@Valid @RequestBody WechatLoginRequest request) {
+    @Operation(summary = "用户注册", description = "使用用户名和密码注册新用户")
+    @PostMapping("/register")
+    public Result register(@RequestBody Map<String, String> request) {
         try {
-            WechatLoginResponse result = authService.wechatLogin(request.getCode());
-            // 只返回token字段
-            java.util.Map<String, Object> data = new java.util.HashMap<>();
+            String username = request.get("username");
+            String password = request.get("password");
+            String nickname = request.get("nickname");
+            
+            if (username == null || username.trim().isEmpty()) {
+                return Result.error("用户名不能为空");
+            }
+            if (password == null || password.trim().isEmpty()) {
+                return Result.error("密码不能为空");
+            }
+            
+            WechatLoginResponse result = authService.register(username, password, nickname);
+            Map<String, Object> data = new HashMap<>();
             data.put("TOKEN", result.getToken());
+            data.put("userId", result.getUserId());
+            return Result.success(data);
+        } catch (Exception e) {
+            return Result.error("注册失败: " + e.getMessage());
+        }
+    }
+    
+    @Operation(summary = "用户登录", description = "使用用户名和密码登录")
+    @PostMapping("/login")
+    public Result login(@RequestBody Map<String, String> request) {
+        try {
+            String username = request.get("username");
+            String password = request.get("password");
+            
+            if (username == null || username.trim().isEmpty()) {
+                return Result.error("用户名不能为空");
+            }
+            if (password == null || password.trim().isEmpty()) {
+                return Result.error("密码不能为空");
+            }
+            
+            WechatLoginResponse result = authService.login(username, password);
+            Map<String, Object> data = new HashMap<>();
+            data.put("TOKEN", result.getToken());
+            data.put("userId", result.getUserId());
             return Result.success(data);
         } catch (Exception e) {
             return Result.error("登录失败: " + e.getMessage());
