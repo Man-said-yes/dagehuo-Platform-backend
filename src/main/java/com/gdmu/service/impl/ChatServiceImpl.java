@@ -185,12 +185,11 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
-    public void markMessageAsRead(Long groupId, Long userId, Long lastReadMessageId) {
-        log.info("标记消息已读，groupId: {}, userId: {}, lastReadMessageId: {}", groupId, userId, lastReadMessageId);
-
-        chatGroupMemberMapper.updateLastReadMessageId(groupId, userId, lastReadMessageId);
-        // 重置Redis中的未读消息数
+    public void markMessageAsRead(Long groupId, Long userId) {
+        log.info("标记消息已读，groupId: {}, userId: {}", groupId, userId);
+        
         redisChatUtil.resetUnreadCount(userId, groupId);
+        log.info("已重置用户{}在群{}的未读消息数", userId, groupId);
     }
 
     @Autowired

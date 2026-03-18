@@ -14,7 +14,7 @@ public interface ChatService {
     List<Map<String, Object>> getGroupMembers(Long groupId);
     ChatMessage sendMessage(Long groupId, Long userId, String content, Integer type);
     List<Map<String, Object>> getGroupMessages(Long groupId, int page, int pageSize);
-    void markMessageAsRead(Long groupId, Long userId, Long lastReadMessageId);
+    void markMessageAsRead(Long groupId, Long userId);
     void addGroupMember(Long groupId, Long userId);
     void removeGroupMember(Long groupId, Long userId);
     ChatGroup createInterestGroup(Long activityId, String groupName, Long ownerId);

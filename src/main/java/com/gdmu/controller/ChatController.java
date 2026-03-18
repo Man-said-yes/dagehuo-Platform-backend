@@ -132,13 +132,11 @@ public class ChatController {
     @PostMapping("/group/{groupId}/read")
     public Result markMessageAsRead(
             @PathVariable Long groupId,
-            @RequestBody Map<String, Object> request,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
             Long userId = (Long) httpRequest.getAttribute("userId");
-            Long lastReadMessageId = Long.valueOf(request.get("lastReadMessageId").toString());
             
-            chatService.markMessageAsRead(groupId, userId, lastReadMessageId);
+            chatService.markMessageAsRead(groupId, userId);
             return Result.success("标记已读成功");
         } catch (Exception e) {
             return Result.error(e.getMessage());
