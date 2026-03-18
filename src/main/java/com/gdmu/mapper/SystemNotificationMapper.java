@@ -32,7 +32,13 @@ public interface SystemNotificationMapper {
     int markAsRead(@Param("id") Long id);
 
     // 批量更新通知为已读
-    @Update("UPDATE system_notification SET is_read = 1 WHERE user_id = #{userId} AND id IN (#{ids})")
+    @Update("<script>" +
+            "UPDATE system_notification SET is_read = 1 " +
+            "WHERE user_id = #{userId} AND id IN " +
+            "<foreach collection='ids' item='id' open='(' separator=',' close=')'>" +
+            "#{id}" +
+            "</foreach>" +
+            "</script>")
     int markMultipleAsRead(@Param("userId") Long userId, @Param("ids") List<Long> ids);
 
     // 根据活动ID查询通知
